@@ -144,6 +144,7 @@ For production use, consider the official [FLA implementation](https://github.co
 - [Architecture Deep Dive](docs/ARCHITECTURE.md) - Detailed explanation of KDA mechanism
 - [Testing Methodology](docs/TESTING.md) - How we validate the implementation
 - [Project Board](docs/PROJECT.md) - Roadmap, issue cards, dependencies, and contribution paths
+- [Live Contribution Board](https://github.com/users/hwilner/projects/8) - Ready, blocked, in-progress, and completed work
 - [Examples](examples/) - Usage examples and benchmarks
 
 ## 🔗 Related Resources

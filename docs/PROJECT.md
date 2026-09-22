@@ -80,10 +80,11 @@ testing and evidence rules in `CONTRIBUTING.md`.
 3. **Pre-registered metrics.** Experiment cards evaluate against the metrics
    fixed in `docs/ROADMAP.md` Phase 3 *before* results are collected.
 
-## Owner action: real GitHub Project
+## Live GitHub Project
 
-The repo owner should create a GitHub Project (board view) and add issues
-#1–#18 to it, with columns `Blocked / Ready / In progress / Done` mirroring the
-tables above. Sub-issue relations are already set (children are attached to
-their epics), so the board can group by epic. This file stays as the in-repo,
-clone-readable mirror.
+The public [Kimi Delta Attention — Contributions](https://github.com/users/hwilner/projects/8)
+board contains issues #1–#18 and a `Workflow` field with `Blocked`, `Ready`,
+`In progress`, and `Done` states mirroring this file. Epics retain their linked
+sub-issues, so contributors can navigate between the board and the parent work.
+This file remains the clone-readable mirror; GitHub issues are the source of
+truth for scope, dependencies, and acceptance criteria.
