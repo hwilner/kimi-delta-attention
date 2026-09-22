@@ -83,8 +83,21 @@ testing and evidence rules in `CONTRIBUTING.md`.
 ## Live GitHub Project
 
 The public [Kimi Delta Attention — Contributions](https://github.com/users/hwilner/projects/8)
-board contains issues #1–#18 and a `Workflow` field with `Blocked`, `Ready`,
+board contains the original issue range plus the linked child cards below and a `Workflow` field with `Blocked`, `Ready`,
 `In progress`, and `Done` states mirroring this file. Epics retain their linked
 sub-issues, so contributors can navigate between the board and the parent work.
 This file remains the clone-readable mirror; GitHub issues are the source of
 truth for scope, dependencies, and acceptance criteria.
+
+## Refined contributor child cards
+
+The original broad cards below remain **open parent/integration tasks**. They were not deleted, replaced, closed, or assigned. Each small linked child is an unassigned, focused contribution unit; contributors should claim one child rather than duplicate parent work.
+
+| Parent task | Linked child issue | Focus |
+| --- | --- | --- |
+| #6 | [#19](https://github.com/hwilner/kimi-delta-attention/issues/19) | [S] DeltaNet baseline: thin variant, rule test, training, and capacity curve |
+| #6 | [#20](https://github.com/hwilner/kimi-delta-attention/issues/20) | [S] Gated DeltaNet baseline: scalar-gated variant, rule test, training, and capacity curve |
+| #6 | [#21](https://github.com/hwilner/kimi-delta-attention/issues/21) | [S] Additive linear-attention baseline: training and capacity curve |
+| #12 | [#22](https://github.com/hwilner/kimi-delta-attention/issues/22) | [XS] Erase operator: beta=1 and zero-value synthetic-state tests |
+| #12 | [#23](https://github.com/hwilner/kimi-delta-attention/issues/23) | [XS] Erase operator: forced per-channel decay and synthetic-state tests |
+| #12 | [#24](https://github.com/hwilner/kimi-delta-attention/issues/24) | [S] Erase crosstalk comparison with bootstrap confidence intervals |
