@@ -5,6 +5,10 @@ what this repository implements and why it matters. It assumes familiarity with
 transformers at the level of "I know attention has queries, keys, and values,"
 and builds everything else up from there.
 
+![Concept figure: Kimi Delta Attention — key, value, write strength beta, and per-channel gate alpha feed the delta-rule update (erase old entry, then write new) of a fixed-size recurrent state S, read out by the query; contrasted with a KV cache that grows with sequence length.](figures/concept_figure.svg)
+
+*Figure 1. KDA maintains a fixed-size state S updated by the delta rule with per-channel gating, so memory stays constant while a standard KV cache grows linearly with the sequence.*
+
 ## 1. The quadratic-cost problem of softmax attention
 
 Standard transformer attention computes, for every token, a weighted average over
