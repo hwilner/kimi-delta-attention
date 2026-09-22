@@ -143,6 +143,7 @@ For production use, consider the official [FLA implementation](https://github.co
 
 - [Architecture Deep Dive](docs/ARCHITECTURE.md) - Detailed explanation of KDA mechanism
 - [Testing Methodology](docs/TESTING.md) - How we validate the implementation
+- [Project Board](docs/PROJECT.md) - Roadmap, issue cards, dependencies, and contribution paths
 - [Examples](examples/) - Usage examples and benchmarks
 
 ## 🔗 Related Resources
@@ -154,7 +155,13 @@ For production use, consider the official [FLA implementation](https://github.co
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+Contributions are welcome from implementers, researchers, educators, and first-time
+open-source contributors. Help extending this educational implementation of the
+original Kimi Linear work is especially welcome: roadmap cards include core
+implementation, tests, baselines, experiments, examples, documentation, and API
+improvements. See the [project board mirror](docs/PROJECT.md) and
+[contribution guide](CONTRIBUTING.md) to choose a task; for a substantial new
+direction, open an issue first so the scope can be agreed together.
 
 ## 📄 License
 

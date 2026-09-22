@@ -4,6 +4,17 @@ Thanks for your interest in contributing to this educational KDA
 implementation! This file explains how to pick up work and how we keep the
 project honest.
 
+## Community extensions are welcome
+
+This repository is a community-friendly educational extension of the original
+Kimi Linear work and its reference ecosystem. Contributions from everyone are
+welcome, whether they improve the implementation, tests, benchmarks, examples,
+documentation, packaging, or experimental tooling. The issue cards provide
+well-scoped starting points, and an issue proposing a compatible extension is
+welcome when no existing card fits. Please preserve the repository's educational
+scope, keep claims tied to the evidence produced here, and discuss substantial
+architectural or experimental changes before investing in a large pull request.
+
 ## Finding work: the issue-card system
 
 All planned work lives in GitHub issues with a consistent card format:
