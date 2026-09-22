@@ -111,8 +111,8 @@ steps, exact specificity control via `β` and `α`. Informally:
   be local. Mitigation: it is measurable (interference vs key similarity is
   itself an interesting curve).
 - **Trained model may not use `S` as a clean associative memory.** Step 1
-  tests this first; a failure is still a publishable negative result about the
-  gap between the idealized and the trained dynamics.
+  tests this first; a failure still documents the gap between the idealized
+  and the trained dynamics.
 - **Synthetic-to-real generalization unproven.** Scope is explicitly synthetic;
   claims will not be extrapolated.
 - **Channel attribution may be diffuse.** Would be reported as an honest
