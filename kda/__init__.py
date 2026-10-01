@@ -12,6 +12,12 @@ This package provides:
 
 from .core import KDACore, KDAChunkwise
 from .attention import KimiDeltaAttention, ShortConv1d
+from .variants import (
+    DeltaMemoryOutput,
+    DeltaMemoryVariant,
+    available_variants,
+    create_variant,
+)
 
 __version__ = "0.1.0"
 
@@ -20,4 +26,8 @@ __all__ = [
     "KDAChunkwise",
     "KimiDeltaAttention",
     "ShortConv1d",
+    "DeltaMemoryOutput",
+    "DeltaMemoryVariant",
+    "available_variants",
+    "create_variant",
 ]

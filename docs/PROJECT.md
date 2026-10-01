@@ -52,6 +52,20 @@ testing and evidence rules in `CONTRIBUTING.md`.
 | #14 | Capacity/interference curve: linear vs DeltaNet vs Gated DeltaNet vs KDA editability comparison | S | #6, #10 |
 | #15 | Results report against pre-registered metrics with honest negatives | S | #11, #12, #13, #14 |
 
+## Epic: Phase 4 — Precision-Gated / Kalman Delta Attention (#25)
+
+| Issue | Title | Size | Blocked by |
+|---|---|---|---|
+| #26 | Shared delta-memory variant interface and registry | S | — (in progress) |
+| #35 | Key-collision and overwrite synthetic task generators | S | — (in progress) |
+| #36 | KDA-RLS-lite prototype with evidence-modulated beta | S | #26, #35 |
+| #33 | Diagonal precision-gated KDA prototype | S | #26 |
+| #27 | State/gate diagnostics for memory capacity and uncertainty experiments | S | #7, #26 |
+| #37 | GDN-2 and EDA reference baselines for comparison | S | #26 |
+| #28 | Calibration experiment: predicted uncertainty vs recall failure | S | #27, #35, #36 |
+| #38 | Adaptive hybrid-routing prototype: KDA vs exact attention fallback | S | #27, #28 |
+| #34 | Phase 4 results report with pre-registered metrics and honest negatives | S | #28, #33, #36, #38 |
+
 ## Standalone (no epic)
 
 | Issue | Title | Size | Blocked by |
