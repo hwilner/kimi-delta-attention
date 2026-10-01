@@ -39,16 +39,19 @@ kimi-delta-attention/
 ├── kda/
 │   ├── __init__.py
 │   ├── core.py              # Core KDA implementation
-│   ├── attention.py         # KDA attention layer
-│   └── utils.py             # Helper functions
+│   ├── chunkwise.py         # Chunkwise DPLR parallel form (exact WY representation)
+│   ├── precision.py         # Block-scaled FP8 state cache & stochastic rounding
+│   └── attention.py         # KDA attention layer
 ├── tests/
 │   ├── test_kda_core.py     # Unit tests for KDA
+│   ├── test_chunkwise.py    # DPLR parity + low-precision numerics tests
 │   └── test_attention.py    # Integration tests
 ├── examples/
 │   ├── basic_usage.py       # Simple usage example
 │   └── benchmark.py         # Performance benchmarking
 ├── docs/
 │   ├── ARCHITECTURE.md      # Detailed architecture explanation
+│   ├── CHUNKWISE.md         # Chunkwise DPLR derivation & stability analysis
 │   └── TESTING.md           # Testing methodology
 ├── README.md
 ├── requirements.txt
@@ -100,6 +103,20 @@ print(f"Input shape: {x.shape}")
 print(f"Output shape: {output.shape}")
 ```
 
+## ⚡ Chunkwise DPLR Parallel Form
+
+`kda/chunkwise.py` implements the chunkwise **Diagonal-Plus-Low-Rank (DPLR)** reformulation of the KDA recurrence (WY representation, chunk size `C = 64`). It replaces the sequential, memory-bandwidth-bound state loop with batched matmuls and one triangular solve per chunk, and is **algebraically identical** to `KDACore` — parity is enforced by `tests/test_chunkwise.py` across multi-chunk, ragged-length, streaming-state, and gradient-flow configurations. All cumulative decay ratios are computed in log space, so the parallel form cannot overflow/underflow for any decay setting. See [docs/CHUNKWISE.md](docs/CHUNKWISE.md) for the full derivation.
+
+```python
+from kda import KDADPLRChunkwise
+
+kda = KDADPLRChunkwise(head_dim=64, value_dim=64, chunk_size=64)
+out, state = kda(q, k, v, alpha, beta)                            # same interface as KDACore
+out2, state = kda(q2, k2, v2, alpha2, beta2, initial_state=state) # streaming
+```
+
+`kda/precision.py` adds the Phase-1 numerics utilities: a block-scaled FP8 (e4m3) state cache and unbiased stochastic rounding, as correctness oracles for the planned fused Triton kernel.
+
 ## 🧪 Testing
 
 **Note:** All tests use **synthetic/random data** for validation purposes only. This is standard practice in ML research implementations to verify correctness without requiring real datasets.
@@ -142,6 +159,7 @@ For production use, consider the official [FLA implementation](https://github.co
 ## 📚 Documentation
 
 - [Architecture Deep Dive](docs/ARCHITECTURE.md) - Detailed explanation of KDA mechanism
+- [Chunkwise DPLR Formulation](docs/CHUNKWISE.md) - Parallel scan derivation and numerical stability
 - [Testing Methodology](docs/TESTING.md) - How we validate the implementation
 - [Project Board](docs/PROJECT.md) - Roadmap, issue cards, dependencies, and contribution paths
 - [Live Contribution Board](https://github.com/users/hwilner/projects/8) - Ready, blocked, in-progress, and completed work
