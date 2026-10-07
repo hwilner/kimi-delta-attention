@@ -5,16 +5,16 @@ key-aligned delta update of :class:`~kda.core.KDACore` untouched and derives
 the effective write gate from a per-channel *evidence accumulator* inspired by
 recursive least squares (RLS):
 
-    n_t   = rho * alpha_t \u2299 n_{t-1} + k_t^2          (evidence accumulation)
+    n_t   = rho * alpha_t ⊙ n_{t-1} + k_t^2          (evidence accumulation)
     e_t   = sum_c n_{t,c} * k_{t,c}^2                (occupancy along k_t)
-    \u03b2_eff = clamp(\u03b2_t / (\u03bb + e_t), \u03b2_min, \u03b2_max)     (evidence modulation)
+    β_eff = clamp(β_t / (λ + e_t), β_min, β_max)     (evidence modulation)
 
-Intuition: ``n_t`` counts (decayed) squared key mass written per channel \u2014
+Intuition: ``n_t`` counts (decayed) squared key mass written per channel —
 how much evidence the state has already received in each direction. ``e_t``
 is the fraction of that evidence aligned with the current key ``k_t`` (for
 L2-normalized keys it is a Rayleigh-quotient-style occupancy score). When the
 state already holds a lot of evidence in the write direction, the write gate
-is damped; novel directions (low ``e_t``) leave ``\u03b2`` nearly unchanged.
+is damped; novel directions (low ``e_t``) leave ``β`` nearly unchanged.
 
 Scope notes (per issue #36):
 - This is a research prototype, not a tuned mechanism; no production
@@ -48,11 +48,11 @@ class KDARLSLiteVariant(DeltaMemoryVariant):
             numerically identical to :class:`KDACore`.
         evidence_decay: Extra decay ``rho`` applied to the evidence buffer on
             top of ``alpha_t``. ``1.0`` reproduces the accumulator proposed in
-            issue #36 (``n_t = alpha_t \u2299 n_{t-1} + k_t^2``); smaller values
+            issue #36 (``n_t = alpha_t ⊙ n_{t-1} + k_t^2``); smaller values
             forget evidence faster. Must lie in ``(0, 1]``.
-        lambda_: Non-negative offset ``\u03bb`` in the ``\u03b2_eff`` denominator.
+        lambda_: Non-negative offset ``λ`` in the ``β_eff`` denominator.
             Larger values damp writes more conservatively; ``lambda_=1`` with
-            zero evidence leaves ``\u03b2`` unchanged.
+            zero evidence leaves ``β`` unchanged.
         beta_min: Lower clamp for the effective write gate.
         beta_max: Upper clamp for the effective write gate.
     """
@@ -169,7 +169,7 @@ class KDARLSLiteVariant(DeltaMemoryVariant):
             beta_t = beta[:, t, :]        # (B, 1)
 
             # --- Evidence update (RLS-lite) -------------------------------
-            # n_t = rho * alpha_t \u2299 n_{t-1} + k_t^2
+            # n_t = rho * alpha_t ⊙ n_{t-1} + k_t^2
             evidence = self.evidence_decay * alpha_t * evidence + k_t * k_t
             # Occupancy of past evidence along the current write direction.
             e_t = (evidence * k_t * k_t).sum(dim=-1, keepdim=True)  # (B, 1)

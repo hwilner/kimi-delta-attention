@@ -1,59 +1,63 @@
-# Project Status and Task Tracker
+# Project Board
 
-This file tracks the state of the project: which tasks are open, in progress,
-or completed, and how they relate to each other. It is updated as part of each
-merged pull request.
+In-repo mirror of the GitHub issue backlog. The issues are the source of truth;
+this file is the readable overview. Rationale for every phase lives in
+`docs/ROADMAP.md`; engineering selection rules in `docs/METHODS.md`; how to pick
+up a card in `CONTRIBUTING.md`.
 
-## Completed milestones
+## Community implementation and extension welcome
 
-- Educational implementation of Kimi Delta Attention (KDA) based on the Kimi
-  Linear paper (arXiv:2510.26692): `KDACore`, `KDAChunkwise`, and the
-  `KimiDeltaAttention` layer, with unit tests and usage examples.
-- Documentation set: `README.md`, `docs/ARCHITECTURE.md`,
-  `docs/EXTENDED_INTRODUCTION.md`, and contribution/process docs.
+Everyone is welcome to help extend this educational implementation of the
+original Kimi Linear work. The cards below cover implementation, tests,
+baselines, experiments, examples, API documentation, and packaging; each is a
+valid contribution path. If a useful extension is not represented by a card,
+open a discussion-style issue to propose it before starting a large change.
+Contributors should retain the repository's educational scope and follow the
+testing and evidence rules in `CONTRIBUTING.md`.
 
-## Epics
+## Status: Ready to start
 
-| Epic | Title | Status |
-|---|---|---|
-| #1 | Phase 1: Associative-recall validation suite | Open |
-| #2 | Phase 2: State inspection tooling | Open |
-| #3 | Phase 3 (novel research): Delta-state surgery | Open |
-| #25 | Phase 4: Precision-Gated / Kalman Delta Attention research track | Open |
+| Issue | Title | Size | Epic |
+|---|---|---|---|
+| #4 | MQAR-style synthetic key→value recall task generators + data versioning | S | Phase 1 (#1) |
+| #7 | State-capture utilities: expose/serialize S_t, α_t, β_t trajectories during a forward pass + tests | S | Phase 2 (#2) |
+| #16 | pyproject.toml packaging + pytest config cleanup | XS | Standalone |
+| #17 | Example script: KDA vs naive attention memory/latency walkthrough with comments | XS | Standalone |
+| #18 | docs/API_REFERENCE.md for the kda package public API | S | Standalone |
 
-## Epic: Phase 1 \u2014 Associative-recall validation suite (#1)
+## Epic: Phase 1 — Associative-recall validation suite (#1)
 
 | Issue | Title | Size | Blocked by |
 |---|---|---|---|
-| #4 | MQAR-style synthetic key\u2192value recall task generators + data versioning | S | \u2014 (ready) |
+| #4 | MQAR-style synthetic key→value recall task generators + data versioning | S | — (ready) |
 | #5 | Train small KDA on recall suite + report capacity curve | S | #4 |
 | #6 | Minimal additive linear-attention + DeltaNet + Gated DeltaNet baselines for comparison | S | #4 |
 
-## Epic: Phase 2 \u2014 State inspection tooling (#2)
+## Epic: Phase 2 — State inspection tooling (#2)
 
 | Issue | Title | Size | Blocked by |
 |---|---|---|---|
-| #7 | State-capture utilities: expose/serialize S_t, \u03b1_t, \u03b2_t trajectories during a forward pass + tests | S | \u2014 (ready) |
-| #8 | Least-squares readout probe: recover stored values V\u0302 = S\u1d40K, key recovery via pseudoinverse, fidelity metrics | S | #7 |
-| #9 | Channel-gating logger + per-channel \u03b1 statistics report | XS | #7 |
+| #7 | State-capture utilities: expose/serialize S_t, α_t, β_t trajectories during a forward pass + tests | S | — (ready) |
+| #8 | Least-squares readout probe: recover stored values V̂ = SᵀK, key recovery via pseudoinverse, fidelity metrics | S | #7 |
+| #9 | Channel-gating logger + per-channel α statistics report | XS | #7 |
 
-## Epic: Phase 3 \u2014 Delta-state surgery (#3)
+## Epic: Phase 3 — Delta-state surgery (novel research) (#3)
 
 | Issue | Title | Size | Blocked by |
 |---|---|---|---|
-| #10 | Targeted-edit operator: closed-form inverse-delta state update (k_old \u2192 v_new) + unit tests on synthetic states | S | #7 |
+| #10 | Targeted-edit operator: closed-form inverse-delta state update (k_old → v_new) + unit tests on synthetic states | S | #7 |
 | #11 | Edit-specificity experiment: post-edit recall of target vs unedited pairs, interference vs key similarity | S | #10, #8 |
-| #12 | Erase operation (\u03b2=1, v=0 / forced channel decay) + crosstalk structure measurement | S | #10 |
+| #12 | Erase operation (β=1, v=0 / forced channel decay) + crosstalk structure measurement | S | #10 |
 | #13 | Per-channel attribution experiment: ablate top-attributed channels, measure selective recall loss vs random ablation | S | #9, #5 |
 | #14 | Capacity/interference curve: linear vs DeltaNet vs Gated DeltaNet vs KDA editability comparison | S | #6, #10 |
 | #15 | Results report against pre-registered metrics with honest negatives | S | #11, #12, #13, #14 |
 
-## Epic: Phase 4 \u2014 Precision-Gated / Kalman Delta Attention (#25)
+## Epic: Phase 4 — Precision-Gated / Kalman Delta Attention (#25)
 
 | Issue | Title | Size | Blocked by |
 |---|---|---|---|
-| #26 | Shared delta-memory variant interface and registry | S | \u2014 (in progress) |
-| #35 | Key-collision and overwrite synthetic task generators | S | \u2014 (in progress) |
+| #26 | Shared delta-memory variant interface and registry | S | — (in progress) |
+| #35 | Key-collision and overwrite synthetic task generators | S | — (in progress) |
 | #36 | KDA-RLS-lite prototype with evidence-modulated beta | S | #26, #35 (in progress) |
 | #33 | Diagonal precision-gated KDA prototype | S | #26 |
 | #27 | State/gate diagnostics for memory capacity and uncertainty experiments | S | #7, #26 |
@@ -66,16 +70,48 @@ merged pull request.
 
 | Issue | Title | Size | Blocked by |
 |---|---|---|---|
-| #16 | pyproject.toml packaging + pytest config cleanup | XS | \u2014 (ready) |
-| #17 | Example script: KDA vs naive attention memory/latency walkthrough with comments | XS | \u2014 (ready) |
-| #18 | docs/API_REFERENCE.md for the kda package public API | S | \u2014 (ready) |
+| #16 | pyproject.toml packaging + pytest config cleanup | XS | — (ready) |
+| #17 | Example script: KDA vs naive attention memory/latency walkthrough with comments | XS | — (ready) |
+| #18 | docs/API_REFERENCE.md for the kda package public API | S | — (ready) |
 
 ## Suggested contribution paths
 
-- **"I want a quick win":** #16, #17, or #9 (after #7) \u2014 XS cards, clear
+- **"I want a quick win":** #16, #17, or #9 (after #7) — XS cards, clear
   acceptance criteria, no research risk.
-- **"I want to build ML infrastructure":** #4 \u2192 #5, then #7 \u2192 #8. You end up
+- **"I want to build ML infrastructure":** #4 → #5, then #7 → #8. You end up
   owning the measurement stack everything else depends on.
-- **"I want to do the novel research":** start with #7 (state capture) \u2192 #10
-  (edit operator) \u2192 #11 (edit specificity). This is the critical path to the
+- **"I want to do the novel research":** start with #7 (state capture) → #10
+  (edit operator) → #11 (edit specificity). This is the critical path to the
   first delta-state-surgery result.
+- **"I want docs/education work":** #18, #17 — both immediately available.
+
+## Rules for every card
+
+1. **Tests pass.** `pytest tests/` green at merge; new code gets at least one
+   synthetic-data test.
+2. **Honest negatives.** Flat or negative experimental results are reported,
+   never suppressed (see `CONTRIBUTING.md`).
+3. **Pre-registered metrics.** Experiment cards evaluate against the metrics
+   fixed in `docs/ROADMAP.md` Phase 3 *before* results are collected.
+
+## Live GitHub Project
+
+The public [Kimi Delta Attention — Contributions](https://github.com/users/hwilner/projects/8)
+board contains the original issue range plus the linked child cards below and a `Workflow` field with `Blocked`, `Ready`,
+`In progress`, and `Done` states mirroring this file. Epics retain their linked
+sub-issues, so contributors can navigate between the board and the parent work.
+This file remains the clone-readable mirror; GitHub issues are the source of
+truth for scope, dependencies, and acceptance criteria.
+
+## Refined contributor child cards
+
+The original broad cards below remain **open parent/integration tasks**. They were not deleted, replaced, closed, or assigned. Each small linked child is an unassigned, focused contribution unit; contributors should claim one child rather than duplicate parent work.
+
+| Parent task | Linked child issue | Focus |
+| --- | --- | --- |
+| #6 | [#19](https://github.com/hwilner/kimi-delta-attention/issues/19) | [S] DeltaNet baseline: thin variant, rule test, training, and capacity curve |
+| #6 | [#20](https://github.com/hwilner/kimi-delta-attention/issues/20) | [S] Gated DeltaNet baseline: scalar-gated variant, rule test, training, and capacity curve |
+| #6 | [#21](https://github.com/hwilner/kimi-delta-attention/issues/21) | [S] Additive linear-attention baseline: training and capacity curve |
+| #12 | [#22](https://github.com/hwilner/kimi-delta-attention/issues/22) | [XS] Erase operator: beta=1 and zero-value synthetic-state tests |
+| #12 | [#23](https://github.com/hwilner/kimi-delta-attention/issues/23) | [XS] Erase operator: forced per-channel decay and synthetic-state tests |
+| #12 | [#24](https://github.com/hwilner/kimi-delta-attention/issues/24) | [S] Erase crosstalk comparison with bootstrap confidence intervals |

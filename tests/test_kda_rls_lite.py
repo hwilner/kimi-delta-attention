@@ -60,7 +60,7 @@ def test_disabled_variant_matches_kda_baseline():
 
 
 def test_evidence_accumulator_matches_closed_form():
-    """n_t = alpha \u2299 n_{t-1} + k_t^2 with rho=1, checked step by step."""
+    """n_t = alpha ⊙ n_{t-1} + k_t^2 with rho=1, checked step by step."""
     queries, keys, values, gates = _synthetic_inputs(seq_len=5)
     # Pin alpha to a known value to make the closed form easy to verify.
     gates["alpha"] = torch.full_like(gates["alpha"], 0.5)
