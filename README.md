@@ -28,10 +28,14 @@ where `Diag(α_t)` is a **diagonal matrix** enabling channel-wise gating.
 
 ### Performance Highlights
 
-- ✅ **First linear attention to outperform full attention** under fair comparisons
-- ✅ **75% reduction in KV cache usage** for long-context scenarios
-- ✅ **6× faster decoding** at 1M token contexts
-- ✅ **Superior performance** on MMLU-Pro, RULER, and RL-style benchmarks
+The following are results reported by the authors of the KDA paper, **not** measurements
+produced by this repository. This is an educational reimplementation validated only on
+synthetic data; it has not been trained or benchmarked against any of these tasks.
+
+- **First linear attention to outperform full attention** under fair comparisons
+- **75% reduction in KV cache usage** for long-context scenarios
+- **6× faster decoding** at 1M token contexts
+- **Superior performance** on MMLU-Pro, RULER, and RL-style benchmarks
 
 ## 📁 Repository Structure
 
