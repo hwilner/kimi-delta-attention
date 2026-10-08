@@ -179,6 +179,43 @@ class TestKDAChunkwise:
         # Output should have original sequence length (padding removed)
         assert outputs.shape == (batch_size, seq_len, value_dim)
 
+    @pytest.mark.parametrize("seq_len", [17, 50, 100, 129])
+    def test_padded_run_matches_sequential_state(self, setup_params, seq_len):
+        """Padded chunkwise runs return the same state as the exact recurrence.
+
+        Chunked execution pads the sequence up to a whole number of chunks.
+        Those padded steps must be no-ops of the recurrence: padding the
+        decay gate with 0.0 (rather than 1.0) would decay the state to zero,
+        which silently corrupts the returned state even though the output
+        tensors still look correct.
+        """
+        head_dim = setup_params['head_dim']
+        value_dim = setup_params['value_dim']
+        batch_size = setup_params['batch_size']
+
+        queries = F.normalize(torch.randn(batch_size, seq_len, head_dim), dim=-1)
+        keys = F.normalize(torch.randn(batch_size, seq_len, head_dim), dim=-1)
+        values = torch.randn(batch_size, seq_len, value_dim)
+        alpha = torch.sigmoid(torch.randn(batch_size, seq_len, head_dim))
+        beta = torch.sigmoid(torch.randn(batch_size, seq_len, 1))
+
+        sequential_out, sequential_state = KDACore(head_dim, value_dim)(
+            queries, keys, values, alpha, beta
+        )
+        chunked_out, chunked_state = KDAChunkwise(
+            head_dim, value_dim, setup_params['chunk_size']
+        )(queries, keys, values, alpha, beta)
+
+        assert torch.allclose(chunked_out, sequential_out, atol=1e-5), (
+            f"max output deviation: {(chunked_out - sequential_out).abs().max().item():.2e}"
+        )
+        assert chunked_state.abs().max() > 1e-6, (
+            "chunkwise state collapsed to zero; padded steps are not no-ops"
+        )
+        assert torch.allclose(chunked_state, sequential_state, atol=1e-5), (
+            f"max state deviation: {(chunked_state - sequential_state).abs().max().item():.2e}"
+        )
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

@@ -10,9 +10,10 @@ and which design choices are still open with their selection rules.
 | KDA recurrent core (`KDACore`) | `kda/core.py` | Sequential state update `S_t = (I − β_t k_t k_tᵀ) Diag(α_t) S_{t−1} + β_t k_t v_tᵀ`, output `o_t = S_tᵀ q_t`. Single-head, clarity-first. |
 | Chunkwise variant (`KDAChunkwise`) | `kda/core.py` | Simplified chunked processing that delegates intra-chunk work to `KDACore`; padding handled. Educational, not the paper's DPLR kernel. |
 | KDA attention layer (`KimiDeltaAttention`) | `kda/attention.py` | Multi-head wrapper: projections for q/k/v/α/β, per-head `KDACore`, output projection. Standard `nn.Module` interface. |
-| Utilities | `kda/utils.py` | Helper functions used by the core and tests. |
+| Utilities | `kda/precision.py` | Low-precision state utilities: stochastic rounding and the block-scaled FP8 (e4m3) state cache. |
 | Synthetic unit tests | `tests/test_kda_core.py`, `tests/test_attention.py` | Random-data shape/numerics validation (see `docs/TESTING.md`). |
-| Usage / benchmark examples | `examples/basic_usage.py`, `examples/benchmark.py` | Minimal forward-pass demo and a simple benchmark script. |
+| Chunkwise DPLR variant (`KDADPLRChunkwise`) | `kda/chunkwise.py` | Exact chunkwise WY-representation parallel form with log-space decay ratios; numerically equivalent to `KDACore`. |
+| Usage / benchmark examples | `examples/basic_usage.py`, `examples/benchmark.py` | Minimal forward-pass demo and a latency/memory benchmark against PyTorch SDPA. |
 | Architecture & testing docs | `docs/ARCHITECTURE.md`, `docs/TESTING.md` | Existing deep-dive documentation. |
 
 ## Intended

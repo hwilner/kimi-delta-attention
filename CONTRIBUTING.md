@@ -49,7 +49,9 @@ All tests run on synthetic/random data — no dataset downloads needed.
   (`Closes #N` when complete).
 - Fill out the PR template sections; keep the "Task key" comment intact.
 - CI-equivalent bar (run locally before pushing): `pytest tests/` passes, and
-  any new module has at least one synthetic-data test.
+  any new module has at least one synthetic-data test. CI (`.github/workflows/ci.yml`)
+  now enforces this bar automatically on Python 3.10, 3.11 and 3.12, so a red
+  run on the pull request means the local bar was not actually met.
 
 ## Integrity rules
 

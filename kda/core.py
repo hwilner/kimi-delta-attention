@@ -191,14 +191,21 @@ class KDAChunkwise(nn.Module):
         # Split into chunks
         num_chunks = (seq_len + self.chunk_size - 1) // self.chunk_size
         
-        # Pad sequence to multiple of chunk_size
+        # Pad sequence to a multiple of chunk_size.
+        #
+        # Padded steps must be exact no-ops of the recurrence: the decay gate
+        # is padded with 1.0 (no decay) and the write gate with 0.0 (no write).
+        # Zero-padding both, as F.pad does by default, is wrong -- a padded
+        # alpha of 0.0 multiplies the whole state to zero, silently discarding
+        # the memory the caller expects to receive back in the returned state.
+        # kda.chunkwise uses the same convention.
         pad_len = num_chunks * self.chunk_size - seq_len
         if pad_len > 0:
             queries = F.pad(queries, (0, 0, 0, pad_len))
             keys = F.pad(keys, (0, 0, 0, pad_len))
             values = F.pad(values, (0, 0, 0, pad_len))
-            alpha = F.pad(alpha, (0, 0, 0, pad_len))
-            beta = F.pad(beta, (0, 0, 0, pad_len))
+            alpha = F.pad(alpha, (0, 0, 0, pad_len), value=1.0)
+            beta = F.pad(beta, (0, 0, 0, pad_len), value=0.0)
         
         # Reshape into chunks
         queries = queries.view(batch_size, num_chunks, self.chunk_size, self.head_dim)
