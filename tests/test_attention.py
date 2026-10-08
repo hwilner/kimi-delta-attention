@@ -9,6 +9,7 @@ correctness without requiring real datasets.
 import torch
 import pytest
 from kda import KimiDeltaAttention
+from kda.attention import ShortConv1d
 
 
 class TestKimiDeltaAttention:
@@ -179,6 +180,69 @@ class TestKimiDeltaAttention:
         assert output1.shape == (1, 16, d_model)
         assert output2.shape == (1, 16, d_model)
         assert state2.shape == state1.shape
+
+    def test_chunkwise_state_not_corrupted_by_padding(self, setup_params):
+        """Chunkwise mode must not zero the state when the length pads.
+
+        A length that is not a multiple of the chunk size forces the
+        chunkwise path to pad. The returned state is what a streaming caller
+        feeds into the next call, so a collapsed state would silently destroy
+        all memory carried across calls.
+        """
+        batch_size = setup_params['batch_size']
+        d_model = setup_params['d_model']
+        num_heads = setup_params['num_heads']
+        chunk_size = 32
+        seq_len = 50  # Pads to two 32-wide chunks.
+
+        torch.manual_seed(0)
+        x = torch.randn(batch_size, seq_len, d_model)
+
+        chunkwise = KimiDeltaAttention(
+            d_model=d_model, num_heads=num_heads, use_short_conv=False,
+            use_chunkwise=True, chunk_size=chunk_size,
+        ).eval()
+        sequential = KimiDeltaAttention(
+            d_model=d_model, num_heads=num_heads, use_short_conv=False,
+            use_chunkwise=False, chunk_size=chunk_size,
+        ).eval()
+        sequential.load_state_dict(chunkwise.state_dict())
+
+        with torch.no_grad():
+            _, chunk_state = chunkwise(x, return_states=True)
+            _, seq_state = sequential(x, return_states=True)
+
+        assert chunk_state.shape == seq_state.shape
+        assert chunk_state.abs().max() > 1e-6, (
+            "chunkwise returned an all-zero state; padded steps are not no-ops"
+        )
+        assert torch.allclose(chunk_state, seq_state, atol=1e-4), (
+            f"max state deviation: {(chunk_state - seq_state).abs().max().item():.2e}"
+        )
+
+
+class TestShortConv:
+    """Test suite for the short convolution used by the attention layer."""
+
+    @pytest.mark.parametrize("kernel_size", [1, 2, 3, 4])
+    def test_output_length_preserved(self, kernel_size):
+        """The convolution must not change the sequence length.
+
+        A width-1 kernel adds no causal padding, and naively trimming the
+        padding with a ``-0`` slice would drop the entire sequence to zero
+        length instead of leaving it untouched.
+        """
+        conv = ShortConv1d(d_model=16, kernel_size=kernel_size)
+        x = torch.randn(2, 12, 16)
+        assert conv(x).shape == x.shape
+
+    def test_kernel_size_one_end_to_end(self):
+        """A width-1 short convolution is usable in the full attention layer."""
+        layer = KimiDeltaAttention(
+            d_model=32, num_heads=2, use_short_conv=True, conv_kernel_size=1
+        )
+        x = torch.randn(2, 10, 32)
+        assert layer(x).shape == x.shape
 
 
 if __name__ == "__main__":

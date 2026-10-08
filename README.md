@@ -3,6 +3,7 @@
 [![arXiv](https://img.shields.io/badge/arXiv-2510.26692-b31b1b.svg)](https://arxiv.org/abs/2510.26692)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
+[![CI](https://github.com/hwilner/kimi-delta-attention/actions/workflows/ci.yml/badge.svg)](https://github.com/hwilner/kimi-delta-attention/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A clean, educational implementation of **Kimi Delta Attention (KDA)** from the paper ["Kimi Linear: An Expressive, Efficient Attention Architecture"](https://arxiv.org/abs/2510.26692) by Moonshot AI.
@@ -45,7 +46,8 @@ kimi-delta-attention/
 ├── tests/
 │   ├── test_kda_core.py     # Unit tests for KDA
 │   ├── test_chunkwise.py    # DPLR parity + low-precision numerics tests
-│   └── test_attention.py    # Integration tests
+│   ├── test_attention.py    # Integration tests
+│   └── test_packaging.py    # Version + doc/tree consistency checks
 ├── examples/
 │   ├── basic_usage.py       # Simple usage example
 │   └── benchmark.py         # Performance benchmarking
@@ -138,11 +140,16 @@ See [TESTING.md](docs/TESTING.md) for detailed information about the testing met
 
 ## 📊 Benchmarks
 
-Compare KDA with standard attention mechanisms:
+Compare the KDA implementations against PyTorch's scaled-dot-product attention:
 
 ```bash
 python examples/benchmark.py --seq-len 1024 --batch-size 4 --num-heads 8
 ```
+
+The script times the sequential and chunkwise KDA paths plus an SDPA reference on
+your own hardware. These are locally-measured timings, not published benchmark
+numbers: KDA is a recurrent linear-attention formulation and SDPA is quadratic
+full attention, so the table is a scale check rather than a head-to-head claim.
 
 ## 🎓 Educational Focus
 

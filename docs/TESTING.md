@@ -63,25 +63,25 @@ pytest tests/test_attention.py::TestKimiDeltaAttention::test_basic_forward -v
 
 ## Test Results
 
-All 15 tests pass successfully:
+The suite is enforced in CI on every push and pull request (`.github/workflows/ci.yml`),
+across Python 3.10, 3.11 and 3.12. A local run on Python 3.11 with PyTorch 2.14.1
+reports:
 
 ```
-tests/test_attention.py::TestKimiDeltaAttention::test_basic_forward PASSED
-tests/test_attention.py::TestKimiDeltaAttention::test_with_states PASSED
-tests/test_attention.py::TestKimiDeltaAttention::test_with_short_conv PASSED
-tests/test_attention.py::TestKimiDeltaAttention::test_without_short_conv PASSED
-tests/test_attention.py::TestKimiDeltaAttention::test_chunkwise_mode PASSED
-tests/test_attention.py::TestKimiDeltaAttention::test_gradient_flow PASSED
-tests/test_attention.py::TestKimiDeltaAttention::test_with_dropout PASSED
-tests/test_attention.py::TestKimiDeltaAttention::test_different_head_dims PASSED
-tests/test_attention.py::TestKimiDeltaAttention::test_state_continuity PASSED
-tests/test_kda_core.py::TestKDACore::test_output_shape PASSED
-tests/test_kda_core.py::TestKDACore::test_with_initial_state PASSED
-tests/test_kda_core.py::TestKDACore::test_gradient_flow PASSED
-tests/test_kda_core.py::TestKDACore::test_deterministic PASSED
-tests/test_kda_core.py::TestKDAChunkwise::test_chunkwise_output_shape PASSED
-tests/test_kda_core.py::TestKDAChunkwise::test_chunkwise_with_padding PASSED
+44 passed
 ```
+
+Test selection (all synthetic data, no dataset downloads):
+
+| File | Covers |
+|---|---|
+| `tests/test_kda_core.py` | `KDACore` shapes, state handling, gradient flow, determinism; `KDAChunkwise` padding and state parity with the sequential recurrence |
+| `tests/test_attention.py` | `KimiDeltaAttention` forward/state/dropout/head-dim cases, chunkwise state under padding, `ShortConv1d` length preservation |
+| `tests/test_chunkwise.py` | DPLR-vs-sequential parity, gradient parity, stochastic-rounding properties, FP8 block-scaled round-trip |
+| `tests/test_packaging.py` | `setup.py` vs `kda.__version__` agreement, version not hardcoded, README-documented scripts exist |
+
+See the `Tests (Python ...)` and `Documentation and packaging consistency` jobs for the
+authoritative result on any given commit.
 
 ## What Tests Validate
 

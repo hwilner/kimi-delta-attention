@@ -53,8 +53,12 @@ class ShortConv1d(nn.Module):
         # Conv1d expects (B, D, L)
         x = x.transpose(1, 2)
         x = self.conv(x)
-        # Remove extra padding
-        x = x[:, :, :-(self.kernel_size - 1)]
+        # Remove the trailing positions introduced by padding=kernel_size-1
+        # so that the output length matches the input length. For
+        # kernel_size=1 the padding is zero, and slicing by -0 would drop the
+        # whole sequence, so the trim is skipped entirely in that case.
+        if self.kernel_size > 1:
+            x = x[:, :, :-(self.kernel_size - 1)]
         x = x.transpose(1, 2)
         return x
 
