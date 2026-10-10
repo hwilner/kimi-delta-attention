@@ -16,6 +16,12 @@ from .core import KDACore, KDAChunkwise
 from .chunkwise import KDADPLRChunkwise, chunkwise_dplr_forward
 from .precision import BlockScaledFP8State, stochastic_round
 from .attention import KimiDeltaAttention, ShortConv1d
+from .variants import (
+    DeltaMemoryOutput,
+    DeltaMemoryVariant,
+    available_variants,
+    create_variant,
+)
 
 __version__ = "0.2.0"
 
@@ -28,4 +34,8 @@ __all__ = [
     "stochastic_round",
     "KimiDeltaAttention",
     "ShortConv1d",
+    "DeltaMemoryOutput",
+    "DeltaMemoryVariant",
+    "available_variants",
+    "create_variant",
 ]
