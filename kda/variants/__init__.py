@@ -10,6 +10,7 @@ from .base import (
 )
 from .kda_adapter import KDAVariant
 from .kda_rls_lite import KDARLSLiteVariant
+from .precision_gated_kda import PrecisionGatedKDAVariant
 
 __all__ = [
     "DeltaMemoryOutput",
@@ -20,4 +21,5 @@ __all__ = [
     "register_variant",
     "KDAVariant",
     "KDARLSLiteVariant",
+    "PrecisionGatedKDAVariant",
 ]
