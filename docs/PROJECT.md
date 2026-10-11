@@ -60,7 +60,7 @@ testing and evidence rules in `CONTRIBUTING.md`.
 | #35 | Key-collision and overwrite synthetic task generators | S | — (in progress) |
 | #36 | KDA-RLS-lite prototype with evidence-modulated beta | S | #26, #35 (in progress) |
 | #33 | Diagonal precision-gated KDA prototype | S | #26 (in progress) |
-| #27 | State/gate diagnostics for memory capacity and uncertainty experiments | S | #7, #26 |
+| #27 | State/gate diagnostics for memory capacity and uncertainty experiments | S | #7, #26 (in progress) |
 | #37 | GDN-2 and EDA reference baselines for comparison | S | #26 |
 | #28 | Calibration experiment: predicted uncertainty vs recall failure | S | #27, #35, #36 |
 | #38 | Adaptive hybrid-routing prototype: KDA vs exact attention fallback | S | #27, #28 |
