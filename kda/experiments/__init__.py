@@ -14,6 +14,13 @@ from .calibration import (
     expected_calibration_error,
     run_calibration_experiment,
 )
+from .routing import (
+    RoutingExperimentConfig,
+    RoutingVariantData,
+    collect_routing_data,
+    evaluate_operating_point,
+    run_routing_experiment,
+)
 
 __all__ = [
     "CalibrationConfig",
@@ -28,4 +35,9 @@ __all__ = [
     "collect_variant_samples",
     "expected_calibration_error",
     "run_calibration_experiment",
+    "RoutingExperimentConfig",
+    "RoutingVariantData",
+    "collect_routing_data",
+    "evaluate_operating_point",
+    "run_routing_experiment",
 ]
