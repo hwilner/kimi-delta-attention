@@ -193,7 +193,7 @@ def _calibration_section(report: dict) -> list[str]:
         "### Failure rates",
         "",
         "| variant | failure rate | mean recall cosine |",
-        "|---|---|---|---|",
+        "|---|---|---|",
     ]
     for name in variants:
         section = report["variants"][name]
