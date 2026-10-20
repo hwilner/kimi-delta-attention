@@ -64,7 +64,7 @@ testing and evidence rules in `CONTRIBUTING.md`.
 | #37 | GDN-2 and EDA reference baselines for comparison | S | #26 (in progress) |
 | #28 | Calibration experiment: predicted uncertainty vs recall failure | S | #27, #35, #36 (in progress) |
 | #38 | Adaptive hybrid-routing prototype: KDA vs exact attention fallback | S | #27, #28 (in progress) |
-| #34 | Phase 4 results report with pre-registered metrics and honest negatives | S | #28, #33, #36, #38 |
+| #34 | Phase 4 results report with pre-registered metrics and honest negatives | S | #28, #33, #36, #38 (in progress) |
 
 ## Standalone (no epic)
 
