@@ -14,6 +14,13 @@ from .calibration import (
     expected_calibration_error,
     run_calibration_experiment,
 )
+from .report_experiments import (
+    CapacityConfig,
+    OverwriteConfig,
+    edit_locality_metrics,
+    run_capacity_experiment,
+    run_overwrite_experiment,
+)
 from .routing import (
     RoutingExperimentConfig,
     RoutingVariantData,
@@ -40,4 +47,9 @@ __all__ = [
     "collect_routing_data",
     "evaluate_operating_point",
     "run_routing_experiment",
+    "CapacityConfig",
+    "OverwriteConfig",
+    "edit_locality_metrics",
+    "run_capacity_experiment",
+    "run_overwrite_experiment",
 ]
