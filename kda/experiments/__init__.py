@@ -14,6 +14,11 @@ from .calibration import (
     expected_calibration_error,
     run_calibration_experiment,
 )
+from .calibration_robustness import (
+    CalibrationRobustnessConfig,
+    regime_cells,
+    run_calibration_robustness,
+)
 from .report_experiments import (
     CapacityConfig,
     OverwriteConfig,
@@ -42,6 +47,9 @@ __all__ = [
     "collect_variant_samples",
     "expected_calibration_error",
     "run_calibration_experiment",
+    "CalibrationRobustnessConfig",
+    "regime_cells",
+    "run_calibration_robustness",
     "RoutingExperimentConfig",
     "RoutingVariantData",
     "collect_routing_data",
