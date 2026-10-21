@@ -82,7 +82,7 @@ def test_config_validation():
 def test_regime_cells_order_and_inheritance():
     config = _tiny_config(seeds=(5, 6), batch_size=3, alpha_bias=1.5)
     cells = regime_cells(config)
-    # Cartesian product, outer loop over num_pairs, inner loop over cosines.
+    # Cartesian product, outer loop over num_pairs, inner over cosines.
     assert [(c.num_pairs, c.collision_cosine) for c in cells] == [
         (2, 0.5),
         (2, 0.9),
