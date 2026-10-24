@@ -19,6 +19,12 @@ from .calibration_robustness import (
     regime_cells,
     run_calibration_robustness,
 )
+from .precision_gated_ablation import (
+    PrecisionGatedAblationConfig,
+    ablation_cells,
+    is_default_cell,
+    run_precision_gated_ablation,
+)
 from .report_experiments import (
     CapacityConfig,
     OverwriteConfig,
@@ -50,6 +56,10 @@ __all__ = [
     "CalibrationRobustnessConfig",
     "regime_cells",
     "run_calibration_robustness",
+    "PrecisionGatedAblationConfig",
+    "ablation_cells",
+    "is_default_cell",
+    "run_precision_gated_ablation",
     "RoutingExperimentConfig",
     "RoutingVariantData",
     "collect_routing_data",
