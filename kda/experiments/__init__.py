@@ -39,6 +39,11 @@ from .routing import (
     evaluate_operating_point,
     run_routing_experiment,
 )
+from .routing_robustness import (
+    RoutingRobustnessConfig,
+    routing_regime_cells,
+    run_routing_robustness,
+)
 
 __all__ = [
     "CalibrationConfig",
@@ -65,6 +70,9 @@ __all__ = [
     "collect_routing_data",
     "evaluate_operating_point",
     "run_routing_experiment",
+    "RoutingRobustnessConfig",
+    "routing_regime_cells",
+    "run_routing_robustness",
     "CapacityConfig",
     "OverwriteConfig",
     "edit_locality_metrics",
