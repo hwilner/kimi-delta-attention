@@ -25,6 +25,13 @@ from .precision_gated_ablation import (
     is_default_cell,
     run_precision_gated_ablation,
 )
+from .report_consistency import (
+    check_report_consistency,
+    default_ablation_config,
+    default_calibration_robustness_config,
+    default_routing_robustness_config,
+    parse_pipe_tables,
+)
 from .report_experiments import (
     CapacityConfig,
     OverwriteConfig,
@@ -73,6 +80,11 @@ __all__ = [
     "RoutingRobustnessConfig",
     "routing_regime_cells",
     "run_routing_robustness",
+    "check_report_consistency",
+    "default_ablation_config",
+    "default_calibration_robustness_config",
+    "default_routing_robustness_config",
+    "parse_pipe_tables",
     "CapacityConfig",
     "OverwriteConfig",
     "edit_locality_metrics",
