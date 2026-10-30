@@ -39,6 +39,12 @@ from .report_experiments import (
     run_capacity_experiment,
     run_overwrite_experiment,
 )
+from .rls_lite_ablation import (
+    RLSLiteAblationConfig,
+    is_rls_lite_default_cell,
+    rls_lite_cells,
+    run_rls_lite_ablation,
+)
 from .routing import (
     RoutingExperimentConfig,
     RoutingVariantData,
@@ -72,6 +78,10 @@ __all__ = [
     "ablation_cells",
     "is_default_cell",
     "run_precision_gated_ablation",
+    "RLSLiteAblationConfig",
+    "is_rls_lite_default_cell",
+    "rls_lite_cells",
+    "run_rls_lite_ablation",
     "RoutingExperimentConfig",
     "RoutingVariantData",
     "collect_routing_data",
