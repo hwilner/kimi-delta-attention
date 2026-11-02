@@ -490,7 +490,7 @@ def test_positive_control_tiny_sweeps_match_report(tmp_path):
         "### Endpoints",
         "",
         "| variant | compressed accuracy | exact accuracy | headroom |",
-        "|---|---|---|---|",
+        "|---|---|---|",
         "",
         ROUTING_GAINS_HEADING,
         "",
