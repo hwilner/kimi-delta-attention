@@ -2,13 +2,14 @@
 
 The checked-in ``docs/PHASE4_RESULTS.md`` (#34) is generated from the
 pre-registered #28/#34/#38 default configs. The follow-up sweeps — #50
-calibration robustness, #51 precision-gated hyperparameter ablation, and #52
-routing robustness — each contain a default cell that reproduces the
+calibration robustness, #51 precision-gated hyperparameter ablation, #52
+routing robustness, and #54 RLS-lite hyperparameter ablation — each contain
+a default cell that reproduces the
 corresponding base pipeline bit-for-bit, so the report's numbers and the
 sweeps' default-cell numbers are two renderings of the same runs and must
 agree exactly (as formatted strings).
 
-This example recomputes the three default cells (single-cell restrictions of
+This example recomputes the four default cells (single-cell restrictions of
 the checked-in sweep configs, so the check is cheap), parses the checked-in
 report, and prints one line per compared cell with ``OK``/``MISMATCH`` —
 mismatches are shown, never hidden or corrected. Exit code is 0 only when
@@ -28,9 +29,11 @@ from kda.experiments import (
     check_report_consistency,
     default_ablation_config,
     default_calibration_robustness_config,
+    default_rls_lite_ablation_config,
     default_routing_robustness_config,
     run_calibration_robustness,
     run_precision_gated_ablation,
+    run_rls_lite_ablation,
     run_routing_robustness,
 )
 
@@ -39,18 +42,20 @@ REPORT_PATH = Path(__file__).resolve().parent.parent / "docs" / "PHASE4_RESULTS.
 
 def main() -> None:
     print("Recomputing extension default cells (single-cell restrictions of")
-    print("the checked-in #50/#51/#52 sweep configs) ...")
+    print("the checked-in #50/#51/#52/#54 sweep configs) ...")
     ablation_report = run_precision_gated_ablation(default_ablation_config())
     calibration_report = run_calibration_robustness(
         default_calibration_robustness_config()
     )
     routing_report = run_routing_robustness(default_routing_robustness_config())
+    rls_lite_report = run_rls_lite_ablation(default_rls_lite_ablation_config())
 
     result = check_report_consistency(
         REPORT_PATH.read_text(),
         ablation_report=ablation_report,
         calibration_robustness_report=calibration_report,
         routing_robustness_report=routing_report,
+        rls_lite_ablation_report=rls_lite_report,
     )
 
     print(f"\nCross-checking tables in {REPORT_PATH.name}:")

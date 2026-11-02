@@ -29,6 +29,7 @@ from .report_consistency import (
     check_report_consistency,
     default_ablation_config,
     default_calibration_robustness_config,
+    default_rls_lite_ablation_config,
     default_routing_robustness_config,
     parse_pipe_tables,
 )
@@ -93,6 +94,7 @@ __all__ = [
     "check_report_consistency",
     "default_ablation_config",
     "default_calibration_robustness_config",
+    "default_rls_lite_ablation_config",
     "default_routing_robustness_config",
     "parse_pipe_tables",
     "CapacityConfig",
