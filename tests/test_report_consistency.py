@@ -2,11 +2,12 @@
 
 The checker (:mod:`kda.experiments.report_consistency`) verifies that the
 checked-in ``docs/PHASE4_RESULTS.md`` tables agree with the default cells of
-the #50/#51/#52 extension sweeps (which reproduce the #28/#34/#38 pipelines
-bit-for-bit). Tests cover the markdown parser on synthetic input, the
-formatting helpers against hand-computed strings, expectation construction
-on hand-built reports, mismatch detection on corrupted reports, and the full
-check against the checked-in report on freshly recomputed default cells.
+the #50/#51/#52/#54 extension sweeps (which reproduce the #28/#34/#36/#38
+pipelines bit-for-bit). Tests cover the markdown parser on synthetic input,
+the formatting helpers against hand-computed strings, expectation
+construction on hand-built reports, mismatch detection on corrupted
+reports, and the full check against the checked-in report on freshly
+recomputed default cells.
 """
 
 from __future__ import annotations
@@ -17,13 +18,16 @@ from pathlib import Path
 import pytest
 
 from kda.experiments import (
+    RLSLiteAblationConfig,
     check_report_consistency,
     default_ablation_config,
     default_calibration_robustness_config,
+    default_rls_lite_ablation_config,
     default_routing_robustness_config,
     parse_pipe_tables,
     run_calibration_robustness,
     run_precision_gated_ablation,
+    run_rls_lite_ablation,
     run_routing_robustness,
 )
 from kda.experiments.report_consistency import (
@@ -34,6 +38,7 @@ from kda.experiments.report_consistency import (
     calibration_expectations,
     format_report_ci,
     format_report_float,
+    rls_lite_capacity_expectations,
     routing_expectations,
 )
 
@@ -60,6 +65,11 @@ def calibration_robustness_report() -> dict:
 @pytest.fixture(scope="module")
 def routing_robustness_report() -> dict:
     return run_routing_robustness(default_routing_robustness_config())
+
+
+@pytest.fixture(scope="module")
+def rls_lite_ablation_report() -> dict:
+    return run_rls_lite_ablation(default_rls_lite_ablation_config())
 
 
 @pytest.fixture(scope="module")
@@ -159,6 +169,55 @@ def test_capacity_expectations_require_single_default_cell():
         capacity_expectations(bogus)
 
 
+def test_default_rls_lite_ablation_config_is_single_default_cell():
+    config = default_rls_lite_ablation_config()
+    assert config.evidence_decay_grid == (1.0,)
+    assert config.beta_min_grid == (0.0,)
+    assert config.beta_max_grid == (1.0,)
+    report = run_rls_lite_ablation(config)
+    for point in report["operating_points"]:
+        assert len(point["cells"]) == 1
+        assert point["cells"][0]["is_default"]
+
+
+def test_rls_lite_capacity_expectations_require_single_default_cell():
+    bogus = {
+        "operating_points": [
+            {
+                "num_pairs": 8,
+                "cells": [
+                    {"is_default": True, "recall_accuracy": {"value": 0.5, "ci": [0.4, 0.6]}},
+                    {"is_default": True, "recall_accuracy": {"value": 0.6, "ci": [0.5, 0.7]}},
+                ],
+            }
+        ]
+    }
+    with pytest.raises(ValueError, match="exactly one default cell"):
+        rls_lite_capacity_expectations(bogus)
+
+
+def test_rls_lite_capacity_expectations_formatting():
+    report = {
+        "operating_points": [
+            {
+                "num_pairs": 8,
+                "cells": [
+                    {
+                        "is_default": False,
+                        "recall_accuracy": {"value": 0.1, "ci": [0.0, 0.2]},
+                    },
+                    {
+                        "is_default": True,
+                        "recall_accuracy": {"value": 0.4687, "ci": [0.4302, 0.5176]},
+                    },
+                ],
+            }
+        ]
+    }
+    expectations = rls_lite_capacity_expectations(report)
+    assert expectations == {("kda-rls-lite", 8): "0.469 [0.430, 0.518]"}
+
+
 def test_calibration_expectations_require_single_cell():
     with pytest.raises(ValueError, match="single-cell"):
         calibration_expectations({"cells": [{"variants": {}}, {"variants": {}}]})
@@ -205,13 +264,14 @@ def test_routing_expectations_unavailable_and_best_worst():
 
 def test_checked_in_report_matches_extension_default_cells(
     report_markdown, ablation_report, calibration_robustness_report,
-    routing_robustness_report,
+    routing_robustness_report, rls_lite_ablation_report,
 ):
     result = check_report_consistency(
         report_markdown,
         ablation_report=ablation_report,
         calibration_robustness_report=calibration_robustness_report,
         routing_robustness_report=routing_robustness_report,
+        rls_lite_ablation_report=rls_lite_ablation_report,
     )
     assert result["num_checks"] > 0
     mismatches = [c for c in result["checks"] if not c["match"]]
@@ -219,15 +279,37 @@ def test_checked_in_report_matches_extension_default_cells(
     assert result["all_match"]
 
 
+def test_checked_in_report_rls_lite_rows_cross_checked(
+    report_markdown, ablation_report, calibration_robustness_report,
+    routing_robustness_report, rls_lite_ablation_report,
+):
+    """The #54 default cell must contribute the report's kda-rls-lite
+    capacity rows at both pre-registered operating points."""
+    result = check_report_consistency(
+        report_markdown,
+        ablation_report=ablation_report,
+        calibration_robustness_report=calibration_robustness_report,
+        routing_robustness_report=routing_robustness_report,
+        rls_lite_ablation_report=rls_lite_ablation_report,
+    )
+    rls_checks = [
+        c for c in result["checks"]
+        if c["table"] == CAPACITY_HEADING and c["row"] == "kda-rls-lite"
+    ]
+    assert {c["column"] for c in rls_checks} == {"pairs=8", "pairs=16"}
+    assert all(c["match"] for c in rls_checks)
+
+
 def test_result_schema_is_json_serializable(
     report_markdown, ablation_report, calibration_robustness_report,
-    routing_robustness_report,
+    routing_robustness_report, rls_lite_ablation_report,
 ):
     result = check_report_consistency(
         report_markdown,
         ablation_report=ablation_report,
         calibration_robustness_report=calibration_robustness_report,
         routing_robustness_report=routing_robustness_report,
+        rls_lite_ablation_report=rls_lite_ablation_report,
     )
     round_tripped = json.loads(json.dumps(result))
     assert round_tripped["num_checks"] == result["num_checks"]
@@ -237,7 +319,7 @@ def test_result_schema_is_json_serializable(
 
 def test_mismatch_detection_on_corrupted_report(
     report_markdown, ablation_report, calibration_robustness_report,
-    routing_robustness_report,
+    routing_robustness_report, rls_lite_ablation_report,
 ):
     corrupted = report_markdown.replace("0.534 [0.513, 0.555]", "0.999 [0.998, 1.000]")
     assert corrupted != report_markdown
@@ -246,6 +328,7 @@ def test_mismatch_detection_on_corrupted_report(
         ablation_report=ablation_report,
         calibration_robustness_report=calibration_robustness_report,
         routing_robustness_report=routing_robustness_report,
+        rls_lite_ablation_report=rls_lite_ablation_report,
     )
     assert not result["all_match"]
     bad = [c for c in result["checks"] if not c["match"]]
@@ -259,14 +342,40 @@ def test_mismatch_detection_on_corrupted_report(
     assert bad[0]["actual"] == "0.999 [0.998, 1.000]"
 
 
+def test_mismatch_detection_on_corrupted_rls_lite_cell(
+    report_markdown, ablation_report, calibration_robustness_report,
+    routing_robustness_report, rls_lite_ablation_report,
+):
+    """Corrupting the report's RLS-lite pairs=8 cell must flag exactly that
+    cell — the #54 default-cell cross-check localizes the damage."""
+    corrupted = report_markdown.replace("0.469 [0.430, 0.518]", "0.111 [0.100, 0.122]")
+    assert corrupted != report_markdown
+    result = check_report_consistency(
+        corrupted,
+        ablation_report=ablation_report,
+        calibration_robustness_report=calibration_robustness_report,
+        routing_robustness_report=routing_robustness_report,
+        rls_lite_ablation_report=rls_lite_ablation_report,
+    )
+    assert not result["all_match"]
+    bad = [c for c in result["checks"] if not c["match"]]
+    assert len(bad) == 1
+    assert bad[0]["table"] == CAPACITY_HEADING
+    assert bad[0]["row"] == "kda-rls-lite"
+    assert bad[0]["column"] == "pairs=8"
+    assert bad[0]["actual"] == "0.111 [0.100, 0.122]"
+
+
 def test_missing_table_is_reported_not_raised(
     ablation_report, calibration_robustness_report, routing_robustness_report,
+    rls_lite_ablation_report,
 ):
     result = check_report_consistency(
         "# empty report\n",
         ablation_report=ablation_report,
         calibration_robustness_report=calibration_robustness_report,
         routing_robustness_report=routing_robustness_report,
+        rls_lite_ablation_report=rls_lite_ablation_report,
     )
     assert not result["all_match"]
     assert result["num_mismatches"] == result["num_checks"]
@@ -275,7 +384,7 @@ def test_missing_table_is_reported_not_raised(
 
 def test_unavailable_signals_cross_checked(
     report_markdown, ablation_report, calibration_robustness_report,
-    routing_robustness_report,
+    routing_robustness_report, rls_lite_ablation_report,
 ):
     """Baseline KDA exposes no precision/evidence signals: the report's
     literal 'unavailable' cells must match the sweeps' unavailable records."""
@@ -284,6 +393,7 @@ def test_unavailable_signals_cross_checked(
         ablation_report=ablation_report,
         calibration_robustness_report=calibration_robustness_report,
         routing_robustness_report=routing_robustness_report,
+        rls_lite_ablation_report=rls_lite_ablation_report,
     )
     unavailable = [
         c for c in result["checks"] if c["expected"] == "unavailable"
@@ -302,6 +412,9 @@ def test_deterministic_across_runs(report_markdown):
         routing_robustness_report=run_routing_robustness(
             default_routing_robustness_config()
         ),
+        rls_lite_ablation_report=run_rls_lite_ablation(
+            default_rls_lite_ablation_config()
+        ),
     )
     second = check_report_consistency(
         report_markdown,
@@ -311,6 +424,9 @@ def test_deterministic_across_runs(report_markdown):
         ),
         routing_robustness_report=run_routing_robustness(
             default_routing_robustness_config()
+        ),
+        rls_lite_ablation_report=run_rls_lite_ablation(
+            default_rls_lite_ablation_config()
         ),
     )
     assert first == second
@@ -336,6 +452,20 @@ def test_positive_control_tiny_sweeps_match_report(tmp_path):
     assert ("kda", 4) in capacity
     assert ("precision-gated-kda", 4) in capacity
 
+    rls_lite = run_rls_lite_ablation(
+        RLSLiteAblationConfig(
+            evidence_decay_grid=(1.0,),
+            beta_min_grid=(0.0,),
+            beta_max_grid=(1.0,),
+            operating_points=((4, 0.9),),
+            seeds=TINY_SEEDS,
+            batch_size=TINY_BATCH,
+            bootstrap_resamples=10,
+        )
+    )
+    rls_lite_capacity = rls_lite_capacity_expectations(rls_lite)
+    assert ("kda-rls-lite", 4) in rls_lite_capacity
+
     # Build a mini-report from the recomputed strings: the checker must
     # accept it, proving the expectations are in the report's own format.
     mini = [
@@ -345,6 +475,7 @@ def test_positive_control_tiny_sweeps_match_report(tmp_path):
         "|---|---|",
         f"| kda | {capacity[('kda', 4)]} |",
         f"| precision-gated-kda | {capacity[('precision-gated-kda', 4)]} |",
+        f"| kda-rls-lite | {rls_lite_capacity[('kda-rls-lite', 4)]} |",
         "",
         "### Failure rates",
         "",
@@ -388,6 +519,7 @@ def test_positive_control_tiny_sweeps_match_report(tmp_path):
         ablation_report=ablation,
         calibration_robustness_report=calibration,
         routing_robustness_report=routing,
+        rls_lite_ablation_report=rls_lite,
     )
     # Capacity cells match by construction; the empty calibration/routing
     # tables are flagged as missing rows (structural honesty), which this
