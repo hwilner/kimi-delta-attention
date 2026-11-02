@@ -3,12 +3,14 @@
 ``docs/PHASE4_RESULTS.md`` is generated from the pre-registered #28/#34/#38
 default configs, while the follow-up sweeps — calibration robustness (#50,
 :mod:`kda.experiments.calibration_robustness`), the #33 hyperparameter
-ablation (#51, :mod:`kda.experiments.precision_gated_ablation`), and routing
-robustness (#52, :mod:`kda.experiments.routing_robustness`) — each contain a
+ablation (#51, :mod:`kda.experiments.precision_gated_ablation`), routing
+robustness (#52, :mod:`kda.experiments.routing_robustness`), and the #36
+hyperparameter ablation (#54,
+:mod:`kda.experiments.rls_lite_ablation`) — each contain a
 *default cell* that is documented and regression-tested to reproduce the
 corresponding base pipeline bit-for-bit. That means the same numbers appear
 in two places, and they must agree: the report's capacity table must equal
-the ablation's default cell, the report's calibration AUROC table must equal
+the ablations' default cells, the report's calibration AUROC table must equal
 the robustness sweep's ``(8, 0.9)`` cell, and the report's routing section
 must equal the routing sweep's default cell.
 
@@ -21,11 +23,14 @@ comparison is recorded as an explicit check entry with ``expected``,
 ``actual``, and ``match``; mismatches are reported, never hidden or
 corrected (the honest-negatives discipline applied to the report itself).
 
-Scope: only the overlapping cells are checked — the ablation runs KDA
-(reference) and precision-gated KDA, and the robustness sweeps run KDA,
+Scope: only the overlapping cells are checked — the #51 ablation runs KDA
+(reference) and precision-gated KDA, the #54 ablation runs KDA (reference)
+and KDA-RLS-lite, and the robustness sweeps run KDA,
 KDA-RLS-lite, and precision-gated KDA, so GDN-2/EDA rows and non-default
 regime cells are out of scope here (the per-sweep regression tests already
-cover their own pipelines).
+cover their own pipelines). The KDA reference rows of the two ablations are
+two renderings of the same pipeline as well; they are cross-checked via the
+#51 expectations, so the #54 side contributes its RLS-lite default cell.
 """
 
 from __future__ import annotations
@@ -36,8 +41,10 @@ __all__ = [
     "format_report_ci",
     "default_ablation_config",
     "default_calibration_robustness_config",
+    "default_rls_lite_ablation_config",
     "default_routing_robustness_config",
     "capacity_expectations",
+    "rls_lite_capacity_expectations",
     "calibration_expectations",
     "routing_expectations",
     "check_report_consistency",
@@ -49,6 +56,12 @@ from .precision_gated_ablation import (
     DEFAULT_LAMBDA,
     DEFAULT_PROCESS_NOISE,
     PrecisionGatedAblationConfig,
+)
+from .rls_lite_ablation import (
+    DEFAULT_BETA_MAX,
+    DEFAULT_BETA_MIN,
+    DEFAULT_EVIDENCE_DECAY,
+    RLSLiteAblationConfig,
 )
 from .routing_robustness import RoutingRobustnessConfig
 
@@ -153,6 +166,22 @@ def default_calibration_robustness_config() -> CalibrationRobustnessConfig:
     )
 
 
+def default_rls_lite_ablation_config() -> RLSLiteAblationConfig:
+    """RLS-lite ablation config restricted to the #36 default cell.
+
+    Field-for-field the #54 default config except that each grid is collapsed
+    to the default hyperparameter value, so the run contains exactly the cell
+    that reproduces the #34 RLS-lite capacity rows at both pre-registered
+    operating points.
+    """
+
+    return RLSLiteAblationConfig(
+        evidence_decay_grid=(DEFAULT_EVIDENCE_DECAY,),
+        beta_min_grid=(DEFAULT_BETA_MIN,),
+        beta_max_grid=(DEFAULT_BETA_MAX,),
+    )
+
+
 def default_routing_robustness_config() -> RoutingRobustnessConfig:
     """Routing robustness config restricted to the #38 default cell."""
 
@@ -185,6 +214,34 @@ def capacity_expectations(ablation_report: dict) -> dict[tuple[str, int], str]:
                 f"num_pairs={num_pairs}"
             )
         expectations[("precision-gated-kda", num_pairs)] = format_report_ci(
+            default_cells[0]["recall_accuracy"]
+        )
+    return expectations
+
+
+def rls_lite_capacity_expectations(
+    rls_lite_report: dict,
+) -> dict[tuple[str, int], str]:
+    """Expected capacity-table cells from the RLS-lite ablation default cell.
+
+    Maps ``("kda-rls-lite", num_pairs)`` to the formatted ``value [ci]``
+    string the report's capacity sweep must show at collision cosine 0.900,
+    per operating point of the #54 ablation. The ablation's KDA reference
+    rows are not included: they reproduce the same pipeline as the #51
+    reference rows, which :func:`capacity_expectations` already checks.
+    """
+
+    expectations: dict[tuple[str, int], str] = {}
+    for point in rls_lite_report["operating_points"]:
+        num_pairs = int(point["num_pairs"])
+        default_cells = [c for c in point["cells"] if c["is_default"]]
+        if len(default_cells) != 1:
+            raise ValueError(
+                "RLS-lite ablation report must contain exactly one default "
+                f"cell per operating point, found {len(default_cells)} at "
+                f"num_pairs={num_pairs}"
+            )
+        expectations[("kda-rls-lite", num_pairs)] = format_report_ci(
             default_cells[0]["recall_accuracy"]
         )
     return expectations
@@ -326,6 +383,7 @@ def check_report_consistency(
     ablation_report: dict,
     calibration_robustness_report: dict,
     routing_robustness_report: dict,
+    rls_lite_ablation_report: dict,
 ) -> dict:
     """Cross-check the report's tables against the extension default cells.
 
@@ -340,6 +398,10 @@ def check_report_consistency(
         routing_robustness_report: Result of
             :func:`kda.experiments.routing_robustness.run_routing_robustness`
             on :func:`default_routing_robustness_config`.
+        rls_lite_ablation_report: Result of
+            :func:`kda.experiments.rls_lite_ablation.run_rls_lite_ablation`
+            on :func:`default_rls_lite_ablation_config` (both operating
+            points).
 
     Returns:
         A JSON-serializable dict with one entry per compared cell
@@ -351,6 +413,7 @@ def check_report_consistency(
     checks: list[dict] = []
 
     capacity = capacity_expectations(ablation_report)
+    capacity.update(rls_lite_capacity_expectations(rls_lite_ablation_report))
     _compare_cells(
         checks,
         table_name=CAPACITY_HEADING,
@@ -395,8 +458,9 @@ def check_report_consistency(
         "issue": 34,
         "description": (
             "Cross-experiment consistency: the checked-in #34 report tables "
-            "must equal the default cells of the #50/#51/#52 extension "
-            "sweeps, which reproduce the #28/#34/#38 pipelines bit-for-bit. "
+            "must equal the default cells of the #50/#51/#52/#54 extension "
+            "sweeps, which reproduce the #28/#34/#36/#38 pipelines "
+            "bit-for-bit. "
             "Compared as formatted strings in the report's fixed "
             "three-decimal style; mismatches are reported, never corrected."
         ),
