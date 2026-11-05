@@ -14,23 +14,33 @@ the ablations' default cells, the report's calibration AUROC table must equal
 the robustness sweep's ``(8, 0.9)`` cell, and the report's routing section
 must equal the routing sweep's default cell.
 
-This module automates that cross-check: it parses the checked-in report's
-markdown tables, recomputes the overlapping default cells from the
-checked-in extension configs (restricted to a single cell so the check is
-cheap), and compares the *formatted strings* — the exact text a reader sees
+The report also embeds the two ablation sweeps *in full* (the robustness
+section of the report): every grid cell of both ablations is rendered as a
+table row. Those
+tables are cross-checked cell-by-cell against a fresh run of the checked-in
+full-grid ablation configs (the grids are small enough that the
+recomputation takes seconds), so a hand edit to any ablation row — not just
+the default cell — is caught.
+
+This module automates those cross-checks: it parses the checked-in report's
+markdown tables, recomputes the overlapping numbers from the checked-in
+configs, and compares the *formatted strings* — the exact text a reader sees
 in the report, in the generator's fixed three-decimal style. Every
 comparison is recorded as an explicit check entry with ``expected``,
 ``actual``, and ``match``; mismatches are reported, never hidden or
 corrected (the honest-negatives discipline applied to the report itself).
 
-Scope: only the overlapping cells are checked — the #51 ablation runs KDA
+Scope: only the overlapping numbers are checked — the #51 ablation runs KDA
 (reference) and precision-gated KDA, the #54 ablation runs KDA (reference)
 and KDA-RLS-lite, and the robustness sweeps run KDA,
 KDA-RLS-lite, and precision-gated KDA, so GDN-2/EDA rows and non-default
 regime cells are out of scope here (the per-sweep regression tests already
 cover their own pipelines). The KDA reference rows of the two ablations are
 two renderings of the same pipeline as well; they are cross-checked via the
-#51 expectations, so the #54 side contributes its RLS-lite default cell.
+#51 expectations, so the #54 side contributes its RLS-lite default cell. The
+ablation reference *lines* in the report's robustness section are prose
+(under the tables, outside the pipe tables) and are intentionally not parsed;
+the same numbers are already cross-checked in the capacity table.
 """
 
 from __future__ import annotations
@@ -39,30 +49,22 @@ __all__ = [
     "parse_pipe_tables",
     "format_report_float",
     "format_report_ci",
-    "default_ablation_config",
     "default_calibration_robustness_config",
-    "default_rls_lite_ablation_config",
     "default_routing_robustness_config",
+    "precision_gated_ablation_heading",
+    "rls_lite_ablation_heading",
+    "precision_gated_ablation_rows",
+    "rls_lite_ablation_rows",
     "capacity_expectations",
     "rls_lite_capacity_expectations",
     "calibration_expectations",
     "routing_expectations",
     "check_report_consistency",
+    "PRECISION_GATED_ABLATION_HEADER",
+    "RLS_LITE_ABLATION_HEADER",
 ]
 
 from .calibration_robustness import CalibrationRobustnessConfig
-from .precision_gated_ablation import (
-    DEFAULT_FORGETTING,
-    DEFAULT_LAMBDA,
-    DEFAULT_PROCESS_NOISE,
-    PrecisionGatedAblationConfig,
-)
-from .rls_lite_ablation import (
-    DEFAULT_BETA_MAX,
-    DEFAULT_BETA_MIN,
-    DEFAULT_EVIDENCE_DECAY,
-    RLSLiteAblationConfig,
-)
 from .routing_robustness import RoutingRobustnessConfig
 
 # Headings of the checked-in report sections that carry cross-checked
@@ -141,44 +143,12 @@ def format_report_ci(entry: dict) -> str:
     )
 
 
-def default_ablation_config() -> PrecisionGatedAblationConfig:
-    """Ablation config restricted to the #33 default cell.
-
-    Field-for-field the #51 default config except that each grid is collapsed
-    to the default hyperparameter value, so the run contains exactly the cell
-    that reproduces the #34 precision-gated rows (and the KDA reference row)
-    at both pre-registered operating points.
-    """
-
-    return PrecisionGatedAblationConfig(
-        lambda_grid=(DEFAULT_LAMBDA,),
-        forgetting_grid=(DEFAULT_FORGETTING,),
-        process_noise_grid=(DEFAULT_PROCESS_NOISE,),
-    )
-
-
 def default_calibration_robustness_config() -> CalibrationRobustnessConfig:
     """Calibration robustness config restricted to the #28 default cell."""
 
     return CalibrationRobustnessConfig(
         num_pairs_grid=(8,),
         collision_cosine_grid=(0.9,),
-    )
-
-
-def default_rls_lite_ablation_config() -> RLSLiteAblationConfig:
-    """RLS-lite ablation config restricted to the #36 default cell.
-
-    Field-for-field the #54 default config except that each grid is collapsed
-    to the default hyperparameter value, so the run contains exactly the cell
-    that reproduces the #34 RLS-lite capacity rows at both pre-registered
-    operating points.
-    """
-
-    return RLSLiteAblationConfig(
-        evidence_decay_grid=(DEFAULT_EVIDENCE_DECAY,),
-        beta_min_grid=(DEFAULT_BETA_MIN,),
-        beta_max_grid=(DEFAULT_BETA_MAX,),
     )
 
 
@@ -245,6 +215,100 @@ def rls_lite_capacity_expectations(
             default_cells[0]["recall_accuracy"]
         )
     return expectations
+
+
+# --- ablation robustness-section tables (full-grid cross-checks) -----------
+
+# Header rows of the report's ablation tables; the row builders below and
+# the report generator both render exactly these columns, in this order.
+PRECISION_GATED_ABLATION_HEADER = [
+    "lambda",
+    "forgetting",
+    "process_noise",
+    "default",
+    "recall accuracy",
+    "mean recall cosine",
+]
+RLS_LITE_ABLATION_HEADER = [
+    "evidence_decay",
+    "beta_min",
+    "beta_max",
+    "default",
+    "recall accuracy",
+    "mean recall cosine",
+]
+
+
+def precision_gated_ablation_heading(num_pairs: int, collision_cosine: float) -> str:
+    """Heading of the report's #51 ablation table at one operating point."""
+
+    return (
+        f"### Precision-gated KDA ablation (pairs={num_pairs}, "
+        f"collision cosine {format_report_float(collision_cosine)})"
+    )
+
+
+def rls_lite_ablation_heading(num_pairs: int, collision_cosine: float) -> str:
+    """Heading of the report's #54 ablation table at one operating point."""
+
+    return (
+        f"### KDA-RLS-lite ablation (pairs={num_pairs}, "
+        f"collision cosine {format_report_float(collision_cosine)})"
+    )
+
+
+def precision_gated_ablation_rows(report: dict) -> dict[str, list[list[str]]]:
+    """Expected #51 ablation-table rows, keyed by table heading.
+
+    Each operating point maps to its grid cells rendered as formatted row
+    strings in the report's fixed three-decimal style, in the config's
+    deterministic Cartesian cell order; the default cell carries the ``*``
+    marker. The generator and this checker iterate the same
+    ``point["cells"]`` order, so rows are compared positionally.
+    """
+
+    tables: dict[str, list[list[str]]] = {}
+    for point in report["operating_points"]:
+        heading = precision_gated_ablation_heading(
+            int(point["num_pairs"]), float(point["collision_cosine"])
+        )
+        tables[heading] = [
+            [
+                format_report_float(cell["lambda_"]),
+                format_report_float(cell["forgetting"]),
+                format_report_float(cell["process_noise"]),
+                "*" if cell["is_default"] else "",
+                format_report_ci(cell["recall_accuracy"]),
+                format_report_float(cell["mean_recall_cosine"]),
+            ]
+            for cell in point["cells"]
+        ]
+    return tables
+
+
+def rls_lite_ablation_rows(report: dict) -> dict[str, list[list[str]]]:
+    """Expected #54 ablation-table rows, keyed by table heading.
+
+    Same conventions as :func:`precision_gated_ablation_rows`.
+    """
+
+    tables: dict[str, list[list[str]]] = {}
+    for point in report["operating_points"]:
+        heading = rls_lite_ablation_heading(
+            int(point["num_pairs"]), float(point["collision_cosine"])
+        )
+        tables[heading] = [
+            [
+                format_report_float(cell["evidence_decay"]),
+                format_report_float(cell["beta_min"]),
+                format_report_float(cell["beta_max"]),
+                "*" if cell["is_default"] else "",
+                format_report_ci(cell["recall_accuracy"]),
+                format_report_float(cell["mean_recall_cosine"]),
+            ]
+            for cell in point["cells"]
+        ]
+    return tables
 
 
 def calibration_expectations(
@@ -377,6 +441,97 @@ def _compare_cells(
         checks.append(check)
 
 
+def _compare_rows(
+    checks: list[dict],
+    *,
+    table_name: str,
+    table: dict | None,
+    expected_header: list[str],
+    expected_rows: list[list[str]],
+) -> None:
+    """Record positional row/cell checks of a whole table against expectations.
+
+    Used for the ablation tables, whose rows are hyperparameter cells in a
+    deterministic Cartesian order rather than label-keyed rows. The header is
+    compared as a single ``(header)`` check; data rows are compared
+    positionally, one check per cell, with ``row`` = ``row {i}`` (0-based
+    data-row index) and ``column`` = the header name. A missing table, a
+    header mismatch, or a row-count mismatch is recorded as failed checks
+    with explanatory notes rather than raised, so one structural problem does
+    not hide the remaining comparisons.
+    """
+
+    if table is None:
+        for i in range(len(expected_rows)):
+            checks.append(
+                {
+                    "table": table_name,
+                    "row": f"row {i}",
+                    "column": "(all)",
+                    "expected": expected_rows[i],
+                    "actual": None,
+                    "match": False,
+                    "note": f"table '{table_name}' not found in the report",
+                }
+            )
+        return
+    checks.append(
+        {
+            "table": table_name,
+            "row": "(header)",
+            "column": "(header)",
+            "expected": expected_header,
+            "actual": table["header"],
+            "match": table["header"] == expected_header,
+        }
+    )
+    if len(table["rows"]) != len(expected_rows):
+        checks.append(
+            {
+                "table": table_name,
+                "row": "(row count)",
+                "column": "(row count)",
+                "expected": len(expected_rows),
+                "actual": len(table["rows"]),
+                "match": False,
+                "note": (
+                    f"expected {len(expected_rows)} data rows, found "
+                    f"{len(table['rows'])}"
+                ),
+            }
+        )
+    for i, expected_row in enumerate(expected_rows):
+        if i >= len(table["rows"]):
+            checks.append(
+                {
+                    "table": table_name,
+                    "row": f"row {i}",
+                    "column": "(all)",
+                    "expected": expected_row,
+                    "actual": None,
+                    "match": False,
+                    "note": "row missing from the report table",
+                }
+            )
+            continue
+        actual_row = table["rows"][i]
+        for j, expected_cell in enumerate(expected_row):
+            column = (
+                expected_header[j] if j < len(expected_header) else f"col {j}"
+            )
+            actual_cell = actual_row[j] if j < len(actual_row) else None
+            checks.append(
+                {
+                    "table": table_name,
+                    "row": f"row {i}",
+                    "column": column,
+                    "expected": expected_cell,
+                    "actual": actual_cell,
+                    "match": actual_cell == expected_cell,
+                }
+            )
+
+
 def check_report_consistency(
     markdown: str,
     *,
@@ -385,13 +540,16 @@ def check_report_consistency(
     routing_robustness_report: dict,
     rls_lite_ablation_report: dict,
 ) -> dict:
-    """Cross-check the report's tables against the extension default cells.
+    """Cross-check the report's tables against recomputed sweep results.
 
     Args:
         markdown: Text of the checked-in ``docs/PHASE4_RESULTS.md``.
         ablation_report: Result of
             :func:`kda.experiments.precision_gated_ablation.run_precision_gated_ablation`
-            on :func:`default_ablation_config` (both operating points).
+            on the checked-in *full-grid* #51 default config
+            (:class:`~kda.experiments.PrecisionGatedAblationConfig`). The
+            default cells feed the capacity-table expectations; the full
+            grids feed the ablation-table row checks.
         calibration_robustness_report: Result of
             :func:`kda.experiments.calibration_robustness.run_calibration_robustness`
             on :func:`default_calibration_robustness_config`.
@@ -400,8 +558,8 @@ def check_report_consistency(
             on :func:`default_routing_robustness_config`.
         rls_lite_ablation_report: Result of
             :func:`kda.experiments.rls_lite_ablation.run_rls_lite_ablation`
-            on :func:`default_rls_lite_ablation_config` (both operating
-            points).
+            on the checked-in *full-grid* #54 default config
+            (:class:`~kda.experiments.RLSLiteAblationConfig`).
 
     Returns:
         A JSON-serializable dict with one entry per compared cell
@@ -452,16 +610,39 @@ def check_report_consistency(
         expectations=routing["gains"],
     )
 
+    for heading, expected_rows in precision_gated_ablation_rows(
+        ablation_report
+    ).items():
+        _compare_rows(
+            checks,
+            table_name=heading,
+            table=_table_by_heading(tables, heading),
+            expected_header=PRECISION_GATED_ABLATION_HEADER,
+            expected_rows=expected_rows,
+        )
+    for heading, expected_rows in rls_lite_ablation_rows(
+        rls_lite_ablation_report
+    ).items():
+        _compare_rows(
+            checks,
+            table_name=heading,
+            table=_table_by_heading(tables, heading),
+            expected_header=RLS_LITE_ABLATION_HEADER,
+            expected_rows=expected_rows,
+        )
+
     mismatches = [c for c in checks if not c["match"]]
     return {
         "experiment": "phase4-report-consistency",
         "issue": 34,
         "description": (
             "Cross-experiment consistency: the checked-in #34 report tables "
-            "must equal the default cells of the #50/#51/#52/#54 extension "
-            "sweeps, which reproduce the #28/#34/#36/#38 pipelines "
-            "bit-for-bit. "
-            "Compared as formatted strings in the report's fixed "
+            "must equal the recomputed #50/#51/#52/#54 extension sweeps. The "
+            "sweeps' default cells reproduce the #28/#34/#36/#38 pipelines "
+            "bit-for-bit (capacity/calibration/routing cross-checks), and "
+            "the report's ablation tables embed the #51/#54 full grids, "
+            "which are cross-checked cell-by-cell against a fresh full-grid "
+            "run. Compared as formatted strings in the report's fixed "
             "three-decimal style; mismatches are reported, never corrected."
         ),
         "num_checks": len(checks),

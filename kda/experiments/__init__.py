@@ -27,11 +27,13 @@ from .precision_gated_ablation import (
 )
 from .report_consistency import (
     check_report_consistency,
-    default_ablation_config,
     default_calibration_robustness_config,
-    default_rls_lite_ablation_config,
     default_routing_robustness_config,
     parse_pipe_tables,
+    precision_gated_ablation_heading,
+    precision_gated_ablation_rows,
+    rls_lite_ablation_heading,
+    rls_lite_ablation_rows,
 )
 from .report_experiments import (
     CapacityConfig,
@@ -92,11 +94,13 @@ __all__ = [
     "routing_regime_cells",
     "run_routing_robustness",
     "check_report_consistency",
-    "default_ablation_config",
     "default_calibration_robustness_config",
-    "default_rls_lite_ablation_config",
     "default_routing_robustness_config",
     "parse_pipe_tables",
+    "precision_gated_ablation_heading",
+    "precision_gated_ablation_rows",
+    "rls_lite_ablation_heading",
+    "rls_lite_ablation_rows",
     "CapacityConfig",
     "OverwriteConfig",
     "edit_locality_metrics",
