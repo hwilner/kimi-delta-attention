@@ -310,7 +310,7 @@ def test_compare_rows_flags_row_count_and_missing_row():
             PRECISION_ABLATION_HEADING_8,
             "",
             "| lambda | forgetting | process_noise | default | recall accuracy | mean recall cosine |",
-            "|---|---|---|---|---|---|---|",
+            "|---|---|---|---|---|---|",
             "| 1.000 | 0.900 | 0.000 |  | 0.401 [0.372, 0.430] | 0.461 |",
         ]
     )
