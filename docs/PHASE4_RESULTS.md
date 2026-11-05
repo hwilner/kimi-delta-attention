@@ -193,6 +193,94 @@ Uncertainty-aware routing between the compressed memory and an exact-attention f
 | gate_entropy | 0.005 @ 0.010 / -0.016 @ 0.102 | 0.005 @ 0.010 / -0.016 @ 0.500 | 0.003 @ 0.010 / -0.018 @ 0.102 |
 
 
+## Robustness: hyperparameter ablations (#51, #54)
+
+The capacity numbers above are measured at each prototype's default hyperparameters. The two ablations below ask whether those results survive natural perturbations of the mechanisms' own knobs: every grid cell runs on the identical task/gate draws as the capacity pipeline, so the default cell (marked `*`) reproduces the corresponding capacity-table row above exactly. No cell is filtered — collapsed or flat settings are shown as-is. Full grids and analysis in PRs #51/#54; these tables are cross-checked cell-by-cell against a fresh recomputation by `examples/report_consistency.py`.
+
+### Precision-gated KDA ablation (pairs=8, collision cosine 0.900)
+
+| lambda | forgetting | process_noise | default | recall accuracy | mean recall cosine |
+|---|---|---|---|---|---|
+| 0.300 | 0.900 | 0.000 |  | 0.388 [0.365, 0.414] | 0.443 |
+| 0.300 | 0.900 | 0.050 |  | 0.383 [0.362, 0.409] | 0.436 |
+| 0.300 | 1.000 | 0.000 |  | 0.448 [0.430, 0.469] | 0.493 |
+| 0.300 | 1.000 | 0.050 |  | 0.396 [0.370, 0.427] | 0.465 |
+| 1.000 | 0.900 | 0.000 |  | 0.401 [0.372, 0.430] | 0.461 |
+| 1.000 | 0.900 | 0.050 |  | 0.383 [0.352, 0.414] | 0.451 |
+| 1.000 | 1.000 | 0.000 | * | 0.534 [0.513, 0.555] | 0.531 |
+| 1.000 | 1.000 | 0.050 |  | 0.466 [0.440, 0.497] | 0.499 |
+| 3.000 | 0.900 | 0.000 |  | 0.419 [0.396, 0.445] | 0.468 |
+| 3.000 | 0.900 | 0.050 |  | 0.404 [0.378, 0.435] | 0.459 |
+| 3.000 | 1.000 | 0.000 |  | 0.604 [0.573, 0.638] | 0.546 |
+| 3.000 | 1.000 | 0.050 |  | 0.539 [0.510, 0.568] | 0.514 |
+
+Fixed-beta KDA reference on identical draws: **0.411 [0.380, 0.456]** (mean recall cosine 0.468). Across-cell recall-accuracy spread (max - min over the 12 cells): **0.221**.
+
+### Precision-gated KDA ablation (pairs=16, collision cosine 0.900)
+
+| lambda | forgetting | process_noise | default | recall accuracy | mean recall cosine |
+|---|---|---|---|---|---|
+| 0.300 | 0.900 | 0.000 |  | 0.194 [0.177, 0.211] | 0.237 |
+| 0.300 | 0.900 | 0.050 |  | 0.194 [0.177, 0.210] | 0.236 |
+| 0.300 | 1.000 | 0.000 |  | 0.227 [0.211, 0.247] | 0.280 |
+| 0.300 | 1.000 | 0.050 |  | 0.197 [0.181, 0.214] | 0.253 |
+| 1.000 | 0.900 | 0.000 |  | 0.191 [0.174, 0.208] | 0.241 |
+| 1.000 | 0.900 | 0.050 |  | 0.194 [0.177, 0.211] | 0.239 |
+| 1.000 | 1.000 | 0.000 | * | 0.271 [0.255, 0.286] | 0.299 |
+| 1.000 | 1.000 | 0.050 |  | 0.219 [0.201, 0.240] | 0.271 |
+| 3.000 | 0.900 | 0.000 |  | 0.188 [0.171, 0.203] | 0.244 |
+| 3.000 | 0.900 | 0.050 |  | 0.190 [0.173, 0.207] | 0.242 |
+| 3.000 | 1.000 | 0.000 |  | 0.307 [0.292, 0.324] | 0.307 |
+| 3.000 | 1.000 | 0.050 |  | 0.258 [0.238, 0.275] | 0.282 |
+
+Fixed-beta KDA reference on identical draws: **0.220 [0.202, 0.238]** (mean recall cosine 0.259). Across-cell recall-accuracy spread (max - min over the 12 cells): **0.120**.
+
+### KDA-RLS-lite ablation (pairs=8, collision cosine 0.900)
+
+| evidence_decay | beta_min | beta_max | default | recall accuracy | mean recall cosine |
+|---|---|---|---|---|---|
+| 0.800 | 0.000 | 0.500 |  | 0.479 [0.445, 0.526] | 0.508 |
+| 0.800 | 0.000 | 1.000 |  | 0.451 [0.411, 0.497] | 0.490 |
+| 0.800 | 0.100 | 0.500 |  | 0.479 [0.445, 0.526] | 0.508 |
+| 0.800 | 0.100 | 1.000 |  | 0.451 [0.411, 0.497] | 0.490 |
+| 0.900 | 0.000 | 0.500 |  | 0.477 [0.443, 0.523] | 0.509 |
+| 0.900 | 0.000 | 1.000 |  | 0.456 [0.417, 0.500] | 0.495 |
+| 0.900 | 0.100 | 0.500 |  | 0.477 [0.443, 0.523] | 0.509 |
+| 0.900 | 0.100 | 1.000 |  | 0.456 [0.417, 0.500] | 0.495 |
+| 1.000 | 0.000 | 0.500 |  | 0.482 [0.448, 0.526] | 0.509 |
+| 1.000 | 0.000 | 1.000 | * | 0.469 [0.430, 0.518] | 0.502 |
+| 1.000 | 0.100 | 0.500 |  | 0.482 [0.448, 0.526] | 0.510 |
+| 1.000 | 0.100 | 1.000 |  | 0.469 [0.430, 0.518] | 0.502 |
+
+Fixed-beta KDA reference on identical draws: **0.411 [0.380, 0.456]** (mean recall cosine 0.468). Across-cell recall-accuracy spread (max - min over the 12 cells): **0.031**.
+
+### KDA-RLS-lite ablation (pairs=16, collision cosine 0.900)
+
+| evidence_decay | beta_min | beta_max | default | recall accuracy | mean recall cosine |
+|---|---|---|---|---|---|
+| 0.800 | 0.000 | 0.500 |  | 0.241 [0.225, 0.258] | 0.281 |
+| 0.800 | 0.000 | 1.000 |  | 0.240 [0.221, 0.255] | 0.268 |
+| 0.800 | 0.100 | 0.500 |  | 0.241 [0.225, 0.258] | 0.281 |
+| 0.800 | 0.100 | 1.000 |  | 0.240 [0.221, 0.255] | 0.268 |
+| 0.900 | 0.000 | 0.500 |  | 0.243 [0.228, 0.262] | 0.281 |
+| 0.900 | 0.000 | 1.000 |  | 0.241 [0.223, 0.258] | 0.270 |
+| 0.900 | 0.100 | 0.500 |  | 0.243 [0.228, 0.262] | 0.281 |
+| 0.900 | 0.100 | 1.000 |  | 0.241 [0.223, 0.258] | 0.270 |
+| 1.000 | 0.000 | 0.500 |  | 0.243 [0.227, 0.262] | 0.281 |
+| 1.000 | 0.000 | 1.000 | * | 0.246 [0.228, 0.263] | 0.273 |
+| 1.000 | 0.100 | 0.500 |  | 0.243 [0.227, 0.262] | 0.281 |
+| 1.000 | 0.100 | 1.000 |  | 0.246 [0.228, 0.263] | 0.273 |
+
+Fixed-beta KDA reference on identical draws: **0.220 [0.202, 0.238]** (mean recall cosine 0.259). Across-cell recall-accuracy spread (max - min over the 12 cells): **0.007**.
+
+Reading (every claim is visible in the tables above):
+
+- **The capacity-table advantage is not a lucky default**: the default cell sits mid-grid in both ablations, and the across-cell spread is small where the mechanism is well-behaved.
+- **Precision-gated failure modes (honest negatives)**: forgetting `0.900` degrades recall at every grid point — at 16 pairs it erases the default cell's advantage over the KDA reference — and process noise `0.050` never helps materially (at 8 pairs every paired cell drops; at 16 pairs the effect is flat to negative). At these gate distributions, precision inflation from the forgetting/drift terms is counterproductive on this task family.
+- **The default is not tuned**: `lambda = 3.000` (forgetting `1.000`, process noise `0.000`) scores slightly above the default at both operating points; the default is mid-grid, and the #34 "modest, not transformative" reading survives the ablation.
+- **RLS-lite clamps are mostly inert here (honest negative)**: `beta_min = 0.100` leaves recall accuracy bit-identical at both operating points (the floor essentially never binds; mean recall cosine shifts by at most 1e-4); `beta_max = 0.500` slightly *raises* recall at 8 pairs with overlapping CIs — a direction, not a claim.
+
+
 ## Computational overhead
 
 Asymptotic per-step costs of the **sequential reference recurrences** in this
@@ -237,6 +325,12 @@ tables above.
   gating buys a few accuracy points at high collision cosines and reduces
   stale-value dominance at these defaults; it does not remove the capacity
   cliff.
+- **The prototypes are sensitive to their own knobs, mostly through failure
+  modes**: in the ablation tables above, forgetting `0.900` degrades
+  precision-gated recall at every grid point, process noise `0.050` never
+  helps materially, and the RLS-lite lower clamp essentially never binds in
+  these regimes; no ablation cell was filtered, so these are visible in
+  full.
 - **Scope**: synthetic tasks only; gates are sampled, not learned; no
   training runs; sequential reference recurrences only; ECE uses a
   deterministic min-max score-to-probability mapping (no fitted
@@ -418,6 +512,110 @@ tables above.
     "kda-rls-lite",
     "precision-gated-kda"
   ]
+}
+```
+
+</details>
+
+<details><summary>Precision-gated ablation config (#51)</summary>
+
+```json
+{
+  "alpha_bias": 2.0,
+  "batch_size": 8,
+  "beta_bias": 1.0,
+  "bootstrap_resamples": 200,
+  "bootstrap_seed": 0,
+  "ci_level": 0.95,
+  "failure_threshold": 0.5,
+  "forgetting_grid": [
+    0.9,
+    1.0
+  ],
+  "gate_seed_offset": 10000,
+  "key_dim": 32,
+  "lambda_grid": [
+    0.3,
+    1.0,
+    3.0
+  ],
+  "operating_points": [
+    [
+      8,
+      0.9
+    ],
+    [
+      16,
+      0.9
+    ]
+  ],
+  "p_max": 1000.0,
+  "p_min": 0.001,
+  "precision_init": 1.0,
+  "process_noise_grid": [
+    0.0,
+    0.05
+  ],
+  "reference_variants": [
+    "kda"
+  ],
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "value_dim": 32
+}
+```
+
+</details>
+
+<details><summary>RLS-lite ablation config (#54)</summary>
+
+```json
+{
+  "alpha_bias": 2.0,
+  "batch_size": 8,
+  "beta_bias": 1.0,
+  "beta_max_grid": [
+    0.5,
+    1.0
+  ],
+  "beta_min_grid": [
+    0.0,
+    0.1
+  ],
+  "bootstrap_resamples": 200,
+  "bootstrap_seed": 0,
+  "ci_level": 0.95,
+  "evidence_decay_grid": [
+    0.8,
+    0.9,
+    1.0
+  ],
+  "failure_threshold": 0.5,
+  "gate_seed_offset": 10000,
+  "key_dim": 32,
+  "lambda_": 1.0,
+  "operating_points": [
+    [
+      8,
+      0.9
+    ],
+    [
+      16,
+      0.9
+    ]
+  ],
+  "reference_variants": [
+    "kda"
+  ],
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "value_dim": 32
 }
 ```
 
