@@ -1,9 +1,10 @@
 """Generate the Phase 4 results report (issue #34).
 
-Runs the four pre-registered Phase 4 experiment configs — the
+Runs the six pre-registered Phase 4 experiment configs — the
 capacity/interference and overwrite/recency sweeps of
-:mod:`kda.experiments.report_experiments`, plus the #28 calibration and #38
-hybrid-routing experiments — and renders ``docs/PHASE4_RESULTS.md`` with all
+:mod:`kda.experiments.report_experiments`, the #28 calibration and #38
+hybrid-routing experiments, and the full-grid #51/#54 hyperparameter
+ablations — and renders ``docs/PHASE4_RESULTS.md`` with all
 tables produced from those checked-in configs (acceptance criterion: every
 figure/table is generated from a checked-in config or script). The output is
 deterministic: seeded experiments, fixed float formatting, no timestamps.
@@ -21,11 +22,23 @@ from kda.experiments import (
     CalibrationConfig,
     CapacityConfig,
     OverwriteConfig,
+    PrecisionGatedAblationConfig,
+    RLSLiteAblationConfig,
     RoutingExperimentConfig,
+    precision_gated_ablation_heading,
+    precision_gated_ablation_rows,
+    rls_lite_ablation_heading,
+    rls_lite_ablation_rows,
     run_calibration_experiment,
     run_capacity_experiment,
     run_overwrite_experiment,
+    run_precision_gated_ablation,
+    run_rls_lite_ablation,
     run_routing_experiment,
+)
+from kda.experiments.report_consistency import (
+    PRECISION_GATED_ABLATION_HEADER,
+    RLS_LITE_ABLATION_HEADER,
 )
 
 REPORT_PATH = Path(__file__).resolve().parent.parent / "docs" / "PHASE4_RESULTS.md"
@@ -270,6 +283,92 @@ def _routing_section(report: dict) -> list[str]:
     return lines
 
 
+def _ablation_table(header: list[str], rows: list[list[str]]) -> list[str]:
+    lines = ["| " + " | ".join(header) + " |", "|" + "---|" * len(header)]
+    lines += ["| " + " | ".join(row) + " |" for row in rows]
+    return lines
+
+
+def _ablation_block(report, heading_fn, rows_fn, header) -> list[str]:
+    """One ablation's per-operating-point tables + reference/spread lines."""
+
+    lines: list[str] = []
+    rows_by_heading = rows_fn(report)
+    for point in report["operating_points"]:
+        heading = heading_fn(point["num_pairs"], point["collision_cosine"])
+        lines += [heading, ""]
+        lines += _ablation_table(header, rows_by_heading[heading])
+        reference = point["reference"]["kda"]
+        values = [cell["recall_accuracy"]["value"] for cell in point["cells"]]
+        spread = max(values) - min(values)
+        lines += [
+            "",
+            "Fixed-beta KDA reference on identical draws: "
+            f"**{_fci(reference['recall_accuracy'])}** (mean recall cosine "
+            f"{_f(reference['mean_recall_cosine'])}). Across-cell "
+            "recall-accuracy spread (max - min over the "
+            f"{len(point['cells'])} cells): **{_f(spread)}**.",
+            "",
+        ]
+    return lines
+
+
+def _ablation_section(precision_report: dict, rls_lite_report: dict) -> list[str]:
+    lines = [
+        "## Robustness: hyperparameter ablations (#51, #54)",
+        "",
+        "The capacity numbers above are measured at each prototype's default "
+        "hyperparameters. The two ablations below ask whether those results "
+        "survive natural perturbations of the mechanisms' own knobs: every "
+        "grid cell runs on the identical task/gate draws as the capacity "
+        "pipeline, so the default cell (marked `*`) reproduces the "
+        "corresponding capacity-table row above exactly. No cell is "
+        "filtered — collapsed or flat settings are shown as-is. Full grids "
+        "and analysis in PRs #51/#54; these tables are cross-checked "
+        "cell-by-cell against a fresh recomputation by "
+        "`examples/report_consistency.py`.",
+        "",
+    ]
+    lines += _ablation_block(
+        precision_report,
+        precision_gated_ablation_heading,
+        precision_gated_ablation_rows,
+        PRECISION_GATED_ABLATION_HEADER,
+    )
+    lines += _ablation_block(
+        rls_lite_report,
+        rls_lite_ablation_heading,
+        rls_lite_ablation_rows,
+        RLS_LITE_ABLATION_HEADER,
+    )
+    lines += [
+        "Reading (every claim is visible in the tables above):",
+        "",
+        "- **The capacity-table advantage is not a lucky default**: the "
+        "default cell sits mid-grid in both ablations, and the across-cell "
+        "spread is small where the mechanism is well-behaved.",
+        "- **Precision-gated failure modes (honest negatives)**: forgetting "
+        "`0.900` degrades recall at every grid point — at 16 pairs it "
+        "erases the default cell's advantage over the KDA reference — and "
+        "process noise `0.050` never helps materially (at 8 pairs every "
+        "paired cell drops; at 16 pairs the effect is flat to negative). At "
+        "these gate distributions, precision inflation from the "
+        "forgetting/drift terms is counterproductive on this task family.",
+        "- **The default is not tuned**: `lambda = 3.000` (forgetting "
+        "`1.000`, process noise `0.000`) scores slightly above the default "
+        "at both operating points; the default is mid-grid, and the #34 "
+        "\"modest, not transformative\" reading survives the ablation.",
+        "- **RLS-lite clamps are mostly inert here (honest negative)**: "
+        "`beta_min = 0.100` leaves recall accuracy bit-identical at both "
+        "operating points (the floor essentially never binds; mean recall "
+        "cosine shifts by at most 1e-4); `beta_max = 0.500` slightly "
+        "*raises* recall at 8 pairs with overlapping CIs — a direction, "
+        "not a claim.",
+        "",
+    ]
+    return lines
+
+
 _PROSE_HEADER = """# Phase 4 results report — Precision-Gated / Kalman Delta Attention
 
 This report is **generated from checked-in pre-registered configs** by
@@ -392,6 +491,12 @@ tables above.
   gating buys a few accuracy points at high collision cosines and reduces
   stale-value dominance at these defaults; it does not remove the capacity
   cliff.
+- **The prototypes are sensitive to their own knobs, mostly through failure
+  modes**: in the ablation tables above, forgetting `0.900` degrades
+  precision-gated recall at every grid point, process noise `0.050` never
+  helps materially, and the RLS-lite lower clamp essentially never binds in
+  these regimes; no ablation cell was filtered, so these are visible in
+  full.
 - **Scope**: synthetic tasks only; gates are sampled, not learned; no
   training runs; sequential reference recurrences only; ECE uses a
   deterministic min-max score-to-probability mapping (no fitted
@@ -409,6 +514,8 @@ def build_report_markdown(
     overwrite_config: OverwriteConfig | None = None,
     calibration_config: CalibrationConfig | None = None,
     routing_config: RoutingExperimentConfig | None = None,
+    precision_ablation_config: PrecisionGatedAblationConfig | None = None,
+    rls_lite_ablation_config: RLSLiteAblationConfig | None = None,
 ) -> str:
     """Run the pre-registered Phase 4 experiments and render the report.
 
@@ -422,11 +529,19 @@ def build_report_markdown(
     overwrite_config = overwrite_config or OverwriteConfig()
     calibration_config = calibration_config or CalibrationConfig()
     routing_config = routing_config or RoutingExperimentConfig()
+    precision_ablation_config = (
+        precision_ablation_config or PrecisionGatedAblationConfig()
+    )
+    rls_lite_ablation_config = rls_lite_ablation_config or RLSLiteAblationConfig()
 
     capacity_report = run_capacity_experiment(capacity_config)
     overwrite_report = run_overwrite_experiment(overwrite_config)
     calibration_report = run_calibration_experiment(calibration_config)
     routing_report = run_routing_experiment(routing_config)
+    precision_ablation_report = run_precision_gated_ablation(
+        precision_ablation_config
+    )
+    rls_lite_ablation_report = run_rls_lite_ablation(rls_lite_ablation_config)
 
     parts = [_PROSE_HEADER]
     parts += _capacity_section(capacity_report) + [""]
@@ -434,6 +549,9 @@ def build_report_markdown(
     parts += _locality_section(overwrite_report) + [""]
     parts += _calibration_section(calibration_report) + [""]
     parts += _routing_section(routing_report) + [""]
+    parts += _ablation_section(
+        precision_ablation_report, rls_lite_ablation_report
+    ) + [""]
     parts.append(_PROSE_OVERHEAD)
     parts += _config_block("Capacity/interference config (issue #34 sweeps)",
                            capacity_report["config"])
@@ -443,6 +561,10 @@ def build_report_markdown(
                            calibration_report["config"])
     parts += _config_block("Hybrid-routing config (#38)",
                            routing_report["config"])
+    parts += _config_block("Precision-gated ablation config (#51)",
+                           precision_ablation_report["config"])
+    parts += _config_block("RLS-lite ablation config (#54)",
+                           rls_lite_ablation_report["config"])
     return "\n".join(parts).rstrip("\n") + "\n"
 
 

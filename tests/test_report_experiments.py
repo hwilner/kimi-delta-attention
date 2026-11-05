@@ -23,6 +23,8 @@ from kda.experiments import (
     CalibrationConfig,
     CapacityConfig,
     OverwriteConfig,
+    PrecisionGatedAblationConfig,
+    RLSLiteAblationConfig,
     RoutingExperimentConfig,
     edit_locality_metrics,
     run_capacity_experiment,
@@ -69,6 +71,16 @@ def _tiny_configs():
         ),
         "routing_config": RoutingExperimentConfig(
             seeds=(0,), batch_size=2, num_pairs=4, threshold_quantiles=(0.5, 0.9),
+        ),
+        "precision_ablation_config": PrecisionGatedAblationConfig(
+            lambda_grid=(1.0,), forgetting_grid=(1.0,), process_noise_grid=(0.0,),
+            operating_points=((4, 0.9),), seeds=(0,), batch_size=2,
+            bootstrap_resamples=10,
+        ),
+        "rls_lite_ablation_config": RLSLiteAblationConfig(
+            evidence_decay_grid=(1.0,), beta_min_grid=(0.0,),
+            beta_max_grid=(1.0,), operating_points=((4, 0.9),), seeds=(0,),
+            batch_size=2, bootstrap_resamples=10,
         ),
     }
 
@@ -342,6 +354,7 @@ def test_renderer_has_all_required_sections():
     assert "## Overwrite / recency behavior" in markdown
     assert "## Edit locality" in markdown
     assert "Uncertainty calibration" in markdown
+    assert "## Robustness: hyperparameter ablations (#51, #54)" in markdown
     assert "## Computational overhead" in markdown
     assert "## Negative results and limitations" in markdown
     # Prior baselines cited where relevant (acceptance criterion).
@@ -357,6 +370,26 @@ def test_renderer_deterministic_on_tiny_configs():
     first = renderer.build_report_markdown(**_tiny_configs())
     second = renderer.build_report_markdown(**_tiny_configs())
     assert first == second
+
+
+def test_renderer_ablation_section_on_tiny_configs():
+    """The #51/#54 robustness section renders both ablations' tables, marks
+    the default cell, and reports the reference and spread per point."""
+    renderer = _load_renderer()
+    markdown = renderer.build_report_markdown(**_tiny_configs())
+    for heading in (
+        "### Precision-gated KDA ablation (pairs=4, collision cosine 0.900)",
+        "### KDA-RLS-lite ablation (pairs=4, collision cosine 0.900)",
+    ):
+        assert heading in markdown, f"missing heading {heading!r}"
+    # Tiny grids have exactly one cell each: it is the default cell.
+    assert markdown.count("| * |") == 2
+    # Reference and spread lines are rendered per operating point.
+    assert markdown.count("Fixed-beta KDA reference on identical draws:") == 2
+    assert markdown.count("Across-cell recall-accuracy spread") == 2
+    # Both ablation configs are embedded verbatim.
+    assert "Precision-gated ablation config (#51)" in markdown
+    assert "RLS-lite ablation config (#54)" in markdown
 
 
 def test_checked_in_report_reproduces_byte_for_byte():
