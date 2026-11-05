@@ -1,13 +1,15 @@
 """Synthetic tests for the #34 cross-experiment consistency checker.
 
 The checker (:mod:`kda.experiments.report_consistency`) verifies that the
-checked-in ``docs/PHASE4_RESULTS.md`` tables agree with the default cells of
-the #50/#51/#52/#54 extension sweeps (which reproduce the #28/#34/#36/#38
-pipelines bit-for-bit). Tests cover the markdown parser on synthetic input,
-the formatting helpers against hand-computed strings, expectation
-construction on hand-built reports, mismatch detection on corrupted
-reports, and the full check against the checked-in report on freshly
-recomputed default cells.
+checked-in ``docs/PHASE4_RESULTS.md`` tables agree with the recomputed
+#50/#51/#52/#54 extension sweeps: the sweep default cells reproduce the
+#28/#34/#36/#38 pipelines bit-for-bit (capacity/calibration/routing
+cross-checks), and the report's robustness section embeds the #51/#54
+ablation grids in full, cross-checked cell-by-cell against fresh full-grid
+runs. Tests cover the markdown parser on synthetic input, the formatting
+helpers against hand-computed strings, expectation construction on
+hand-built reports, mismatch detection on corrupted reports, and the full
+check against the checked-in report on freshly recomputed sweeps.
 """
 
 from __future__ import annotations
@@ -18,11 +20,10 @@ from pathlib import Path
 import pytest
 
 from kda.experiments import (
+    PrecisionGatedAblationConfig,
     RLSLiteAblationConfig,
     check_report_consistency,
-    default_ablation_config,
     default_calibration_robustness_config,
-    default_rls_lite_ablation_config,
     default_routing_robustness_config,
     parse_pipe_tables,
     run_calibration_robustness,
@@ -33,11 +34,16 @@ from kda.experiments import (
 from kda.experiments.report_consistency import (
     AUROC_HEADING,
     CAPACITY_HEADING,
+    PRECISION_GATED_ABLATION_HEADER,
     ROUTING_GAINS_HEADING,
+    _compare_rows,
     capacity_expectations,
     calibration_expectations,
     format_report_ci,
     format_report_float,
+    precision_gated_ablation_heading,
+    precision_gated_ablation_rows,
+    rls_lite_ablation_rows,
     rls_lite_capacity_expectations,
     routing_expectations,
 )
@@ -54,7 +60,8 @@ TINY_BATCH = 2
 
 @pytest.fixture(scope="module")
 def ablation_report() -> dict:
-    return run_precision_gated_ablation(default_ablation_config())
+    """Full-grid #51 ablation (the default config; the grids are cheap)."""
+    return run_precision_gated_ablation(PrecisionGatedAblationConfig())
 
 
 @pytest.fixture(scope="module")
@@ -69,7 +76,8 @@ def routing_robustness_report() -> dict:
 
 @pytest.fixture(scope="module")
 def rls_lite_ablation_report() -> dict:
-    return run_rls_lite_ablation(default_rls_lite_ablation_config())
+    """Full-grid #54 ablation (the default config; the grids are cheap)."""
+    return run_rls_lite_ablation(RLSLiteAblationConfig())
 
 
 @pytest.fixture(scope="module")
@@ -169,17 +177,6 @@ def test_capacity_expectations_require_single_default_cell():
         capacity_expectations(bogus)
 
 
-def test_default_rls_lite_ablation_config_is_single_default_cell():
-    config = default_rls_lite_ablation_config()
-    assert config.evidence_decay_grid == (1.0,)
-    assert config.beta_min_grid == (0.0,)
-    assert config.beta_max_grid == (1.0,)
-    report = run_rls_lite_ablation(config)
-    for point in report["operating_points"]:
-        assert len(point["cells"]) == 1
-        assert point["cells"][0]["is_default"]
-
-
 def test_rls_lite_capacity_expectations_require_single_default_cell():
     bogus = {
         "operating_points": [
@@ -216,6 +213,131 @@ def test_rls_lite_capacity_expectations_formatting():
     }
     expectations = rls_lite_capacity_expectations(report)
     assert expectations == {("kda-rls-lite", 8): "0.469 [0.430, 0.518]"}
+
+
+# --- ablation row builders (report robustness section) -----------------------
+
+HAND_BUILT_ABLATION_REPORT = {
+    "operating_points": [
+        {
+            "num_pairs": 8,
+            "collision_cosine": 0.9,
+            "cells": [
+                {
+                    "lambda_": 1.0,
+                    "forgetting": 0.9,
+                    "process_noise": 0.0,
+                    "is_default": False,
+                    "recall_accuracy": {"value": 0.40084, "ci": [0.3724, 0.4304]},
+                    "mean_recall_cosine": 0.46076,
+                },
+                {
+                    "lambda_": 1.0,
+                    "forgetting": 1.0,
+                    "process_noise": 0.0,
+                    "is_default": True,
+                    "recall_accuracy": {"value": 0.53374, "ci": [0.51264, 0.55484]},
+                    "mean_recall_cosine": 0.53062,
+                },
+            ],
+        }
+    ]
+}
+
+PRECISION_ABLATION_HEADING_8 = (
+    "### Precision-gated KDA ablation (pairs=8, collision cosine 0.900)"
+)
+
+
+def test_ablation_heading_format():
+    assert (
+        precision_gated_ablation_heading(8, 0.9) == PRECISION_ABLATION_HEADING_8
+    )
+    assert (
+        precision_gated_ablation_heading(16, 0.9)
+        == "### Precision-gated KDA ablation (pairs=16, collision cosine 0.900)"
+    )
+
+
+def test_precision_gated_ablation_rows_hand_computed():
+    rows = precision_gated_ablation_rows(HAND_BUILT_ABLATION_REPORT)
+    assert rows == {
+        PRECISION_ABLATION_HEADING_8: [
+            ["1.000", "0.900", "0.000", "", "0.401 [0.372, 0.430]", "0.461"],
+            ["1.000", "1.000", "0.000", "*", "0.534 [0.513, 0.555]", "0.531"],
+        ]
+    }
+
+
+def test_rls_lite_ablation_rows_hand_computed():
+    report = {
+        "operating_points": [
+            {
+                "num_pairs": 16,
+                "collision_cosine": 0.9,
+                "cells": [
+                    {
+                        "evidence_decay": 1.0,
+                        "beta_min": 0.0,
+                        "beta_max": 1.0,
+                        "is_default": True,
+                        "recall_accuracy": {
+                            "value": 0.24587,
+                            "ci": [0.22794, 0.26344],
+                        },
+                        "mean_recall_cosine": 0.27304,
+                    },
+                ],
+            }
+        ]
+    }
+    rows = rls_lite_ablation_rows(report)
+    assert rows == {
+        "### KDA-RLS-lite ablation (pairs=16, collision cosine 0.900)": [
+            ["1.000", "0.000", "1.000", "*", "0.246 [0.228, 0.263]", "0.273"],
+        ]
+    }
+
+
+def test_compare_rows_flags_row_count_and_missing_row():
+    """A truncated report table must fail honestly: row-count mismatch plus a
+    per-row missing note, while the surviving row's cells still compare."""
+    expected = precision_gated_ablation_rows(HAND_BUILT_ABLATION_REPORT)[
+        PRECISION_ABLATION_HEADING_8
+    ]
+    markdown = "\n".join(
+        [
+            PRECISION_ABLATION_HEADING_8,
+            "",
+            "| lambda | forgetting | process_noise | default | recall accuracy | mean recall cosine |",
+            "|---|---|---|---|---|---|---|",
+            "| 1.000 | 0.900 | 0.000 |  | 0.401 [0.372, 0.430] | 0.461 |",
+        ]
+    )
+    table = parse_pipe_tables(markdown)[PRECISION_ABLATION_HEADING_8][0]
+    checks: list[dict] = []
+    _compare_rows(
+        checks,
+        table_name=PRECISION_ABLATION_HEADING_8,
+        table=table,
+        expected_header=PRECISION_GATED_ABLATION_HEADER,
+        expected_rows=expected,
+    )
+    # Header matches; the surviving row 0 matches cell-by-cell.
+    header_checks = [c for c in checks if c["row"] == "(header)"]
+    assert len(header_checks) == 1 and header_checks[0]["match"]
+    row0 = [c for c in checks if c["row"] == "row 0"]
+    assert len(row0) == len(PRECISION_GATED_ABLATION_HEADER)
+    assert all(c["match"] for c in row0)
+    # The missing second row is flagged twice: a row-count mismatch and a
+    # per-row missing note — reported, never raised or hidden.
+    count_checks = [c for c in checks if c["row"] == "(row count)"]
+    assert len(count_checks) == 1 and not count_checks[0]["match"]
+    assert "expected 2 data rows, found 1" in count_checks[0]["note"]
+    row1 = [c for c in checks if c["row"] == "row 1"]
+    assert len(row1) == 1 and not row1[0]["match"]
+    assert row1[0]["actual"] is None
+    assert "row missing" in row1[0]["note"]
 
 
 def test_calibration_expectations_require_single_cell():
@@ -279,6 +401,32 @@ def test_checked_in_report_matches_extension_default_cells(
     assert result["all_match"]
 
 
+def test_checked_in_report_ablation_tables_cross_checked(
+    report_markdown, ablation_report, calibration_robustness_report,
+    routing_robustness_report, rls_lite_ablation_report,
+):
+    """The report's #51/#54 ablation tables are cross-checked cell-by-cell
+    against fresh full-grid recomputation: 2 ablations x 2 operating points
+    x (1 header + 12 rows x 6 columns) = 292 checks, all matching."""
+    result = check_report_consistency(
+        report_markdown,
+        ablation_report=ablation_report,
+        calibration_robustness_report=calibration_robustness_report,
+        routing_robustness_report=routing_robustness_report,
+        rls_lite_ablation_report=rls_lite_ablation_report,
+    )
+    ablation_checks = [
+        c for c in result["checks"] if "ablation" in c["table"]
+    ]
+    assert len(ablation_checks) == 4 * (1 + 12 * 6)
+    assert all(c["match"] for c in ablation_checks)
+    # Every grid cell is covered, not just the default cell.
+    compared_rows = {
+        (c["table"], c["row"]) for c in ablation_checks if c["row"] != "(header)"
+    }
+    assert len(compared_rows) == 4 * 12
+
+
 def test_checked_in_report_rls_lite_rows_cross_checked(
     report_markdown, ablation_report, calibration_robustness_report,
     routing_robustness_report, rls_lite_ablation_report,
@@ -332,22 +480,28 @@ def test_mismatch_detection_on_corrupted_report(
     )
     assert not result["all_match"]
     bad = [c for c in result["checks"] if not c["match"]]
-    # The corrupted cell appears in the capacity sweep AND the interference
-    # sweep; only the capacity table is cross-checked, so exactly one check
-    # fails, on the precision-gated pairs=8 cell.
-    assert len(bad) == 1
+    # The corrupted string appears in the capacity sweep, the interference
+    # sweep (not cross-checked), AND the #51 ablation table's default row at
+    # pairs=8 — so exactly two checks fail: the capacity cell and the
+    # ablation row.
+    assert len(bad) == 2
     assert bad[0]["table"] == CAPACITY_HEADING
     assert bad[0]["row"] == "precision-gated-kda"
     assert bad[0]["column"] == "pairs=8"
     assert bad[0]["actual"] == "0.999 [0.998, 1.000]"
+    assert bad[1]["table"] == PRECISION_ABLATION_HEADING_8
+    assert bad[1]["column"] == "recall accuracy"
+    assert bad[1]["actual"] == "0.999 [0.998, 1.000]"
 
 
 def test_mismatch_detection_on_corrupted_rls_lite_cell(
     report_markdown, ablation_report, calibration_robustness_report,
     routing_robustness_report, rls_lite_ablation_report,
 ):
-    """Corrupting the report's RLS-lite pairs=8 cell must flag exactly that
-    cell — the #54 default-cell cross-check localizes the damage."""
+    """Corrupting the report's RLS-lite pairs=8 value flags every
+    cross-checked rendering: the capacity cell and the two ablation-table
+    rows whose formatted value coincides with it (the default row and the
+    beta_min=0.100 row, which is recall-identical to the default)."""
     corrupted = report_markdown.replace("0.469 [0.430, 0.518]", "0.111 [0.100, 0.122]")
     assert corrupted != report_markdown
     result = check_report_consistency(
@@ -359,11 +513,38 @@ def test_mismatch_detection_on_corrupted_rls_lite_cell(
     )
     assert not result["all_match"]
     bad = [c for c in result["checks"] if not c["match"]]
-    assert len(bad) == 1
+    assert len(bad) == 3
     assert bad[0]["table"] == CAPACITY_HEADING
     assert bad[0]["row"] == "kda-rls-lite"
     assert bad[0]["column"] == "pairs=8"
     assert bad[0]["actual"] == "0.111 [0.100, 0.122]"
+    rls_bad = [c for c in bad if c["table"].startswith("### KDA-RLS-lite ablation")]
+    assert len(rls_bad) == 2
+    assert all(c["column"] == "recall accuracy" for c in rls_bad)
+    assert all(c["actual"] == "0.111 [0.100, 0.122]" for c in rls_bad)
+
+
+def test_mismatch_detection_on_corrupted_ablation_row(
+    report_markdown, ablation_report, calibration_robustness_report,
+    routing_robustness_report, rls_lite_ablation_report,
+):
+    """A hand edit to a non-default ablation cell (a string that appears
+    nowhere else in the report) must flag exactly that cell."""
+    corrupted = report_markdown.replace("0.604 [0.573, 0.638]", "0.999 [0.998, 1.000]")
+    assert corrupted != report_markdown
+    result = check_report_consistency(
+        corrupted,
+        ablation_report=ablation_report,
+        calibration_robustness_report=calibration_robustness_report,
+        routing_robustness_report=routing_robustness_report,
+        rls_lite_ablation_report=rls_lite_ablation_report,
+    )
+    assert not result["all_match"]
+    bad = [c for c in result["checks"] if not c["match"]]
+    assert len(bad) == 1
+    assert bad[0]["table"] == PRECISION_ABLATION_HEADING_8
+    assert bad[0]["column"] == "recall accuracy"
+    assert bad[0]["actual"] == "0.999 [0.998, 1.000]"
 
 
 def test_missing_table_is_reported_not_raised(
@@ -405,29 +586,29 @@ def test_unavailable_signals_cross_checked(
 def test_deterministic_across_runs(report_markdown):
     first = check_report_consistency(
         report_markdown,
-        ablation_report=run_precision_gated_ablation(default_ablation_config()),
+        ablation_report=run_precision_gated_ablation(
+            PrecisionGatedAblationConfig()
+        ),
         calibration_robustness_report=run_calibration_robustness(
             default_calibration_robustness_config()
         ),
         routing_robustness_report=run_routing_robustness(
             default_routing_robustness_config()
         ),
-        rls_lite_ablation_report=run_rls_lite_ablation(
-            default_rls_lite_ablation_config()
-        ),
+        rls_lite_ablation_report=run_rls_lite_ablation(RLSLiteAblationConfig()),
     )
     second = check_report_consistency(
         report_markdown,
-        ablation_report=run_precision_gated_ablation(default_ablation_config()),
+        ablation_report=run_precision_gated_ablation(
+            PrecisionGatedAblationConfig()
+        ),
         calibration_robustness_report=run_calibration_robustness(
             default_calibration_robustness_config()
         ),
         routing_robustness_report=run_routing_robustness(
             default_routing_robustness_config()
         ),
-        rls_lite_ablation_report=run_rls_lite_ablation(
-            default_rls_lite_ablation_config()
-        ),
+        rls_lite_ablation_report=run_rls_lite_ablation(RLSLiteAblationConfig()),
     )
     assert first == second
 
@@ -438,7 +619,7 @@ def test_positive_control_tiny_sweeps_match_report(tmp_path):
     when the numbers are recomputed into a fresh mini-report."""
 
     ablation = run_precision_gated_ablation(
-        default_ablation_config().__class__(
+        PrecisionGatedAblationConfig(
             lambda_grid=(1.0,),
             forgetting_grid=(1.0,),
             process_noise_grid=(0.0,),
@@ -490,7 +671,7 @@ def test_positive_control_tiny_sweeps_match_report(tmp_path):
         "### Endpoints",
         "",
         "| variant | compressed accuracy | exact accuracy | headroom |",
-        "|---|---|---|",
+        "|---|---|---|---|",
         "",
         ROUTING_GAINS_HEADING,
         "",
