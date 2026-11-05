@@ -7,10 +7,14 @@ routing robustness, and #54 RLS-lite hyperparameter ablation — each contain
 a default cell that reproduces the
 corresponding base pipeline bit-for-bit, so the report's numbers and the
 sweeps' default-cell numbers are two renderings of the same runs and must
-agree exactly (as formatted strings).
+agree exactly (as formatted strings). The report also embeds the #51/#54
+ablation grids in full; those tables are cross-checked cell-by-cell against
+a fresh full-grid run (the grids are small — seconds to recompute), so a
+hand edit to any ablation row is caught, not just the default cell.
 
-This example recomputes the four default cells (single-cell restrictions of
-the checked-in sweep configs, so the check is cheap), parses the checked-in
+This example recomputes the four sweeps (full grids for the two cheap
+ablations, single-cell restrictions of the checked-in #50/#52 configs for
+the robustness sweeps), parses the checked-in
 report, and prints one line per compared cell with ``OK``/``MISMATCH`` —
 mismatches are shown, never hidden or corrected. Exit code is 0 only when
 every compared cell matches.
@@ -26,10 +30,10 @@ import sys
 from pathlib import Path
 
 from kda.experiments import (
+    PrecisionGatedAblationConfig,
+    RLSLiteAblationConfig,
     check_report_consistency,
-    default_ablation_config,
     default_calibration_robustness_config,
-    default_rls_lite_ablation_config,
     default_routing_robustness_config,
     run_calibration_robustness,
     run_precision_gated_ablation,
@@ -41,14 +45,14 @@ REPORT_PATH = Path(__file__).resolve().parent.parent / "docs" / "PHASE4_RESULTS.
 
 
 def main() -> None:
-    print("Recomputing extension default cells (single-cell restrictions of")
-    print("the checked-in #50/#51/#52/#54 sweep configs) ...")
-    ablation_report = run_precision_gated_ablation(default_ablation_config())
+    print("Recomputing the extension sweeps (full #51/#54 ablation grids;")
+    print("single-cell restrictions of the #50/#52 robustness configs) ...")
+    ablation_report = run_precision_gated_ablation(PrecisionGatedAblationConfig())
     calibration_report = run_calibration_robustness(
         default_calibration_robustness_config()
     )
     routing_report = run_routing_robustness(default_routing_robustness_config())
-    rls_lite_report = run_rls_lite_ablation(default_rls_lite_ablation_config())
+    rls_lite_report = run_rls_lite_ablation(RLSLiteAblationConfig())
 
     result = check_report_consistency(
         REPORT_PATH.read_text(),
