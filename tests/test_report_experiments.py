@@ -21,11 +21,13 @@ import torch
 
 from kda.experiments import (
     CalibrationConfig,
+    CalibrationRobustnessConfig,
     CapacityConfig,
     OverwriteConfig,
     PrecisionGatedAblationConfig,
     RLSLiteAblationConfig,
     RoutingExperimentConfig,
+    RoutingRobustnessConfig,
     edit_locality_metrics,
     run_capacity_experiment,
     run_overwrite_experiment,
@@ -81,6 +83,14 @@ def _tiny_configs():
             evidence_decay_grid=(1.0,), beta_min_grid=(0.0,),
             beta_max_grid=(1.0,), operating_points=((4, 0.9),), seeds=(0,),
             batch_size=2, bootstrap_resamples=10,
+        ),
+        "calibration_robustness_config": CalibrationRobustnessConfig(
+            seeds=(0,), batch_size=2, num_pairs_grid=(4, 8),
+            collision_cosine_grid=(0.9,), bootstrap_resamples=10,
+        ),
+        "routing_robustness_config": RoutingRobustnessConfig(
+            seeds=(0,), batch_size=2, num_pairs_grid=(4, 8),
+            collision_cosine_grid=(0.9,), threshold_quantiles=(0.5, 0.9),
         ),
     }
 
@@ -355,6 +365,7 @@ def test_renderer_has_all_required_sections():
     assert "## Edit locality" in markdown
     assert "Uncertainty calibration" in markdown
     assert "## Robustness: hyperparameter ablations (#51, #54)" in markdown
+    assert "## Robustness across task regimes (#50, #52)" in markdown
     assert "## Computational overhead" in markdown
     assert "## Negative results and limitations" in markdown
     # Prior baselines cited where relevant (acceptance criterion).
@@ -383,13 +394,39 @@ def test_renderer_ablation_section_on_tiny_configs():
     ):
         assert heading in markdown, f"missing heading {heading!r}"
     # Tiny grids have exactly one cell each: it is the default cell.
-    assert markdown.count("| * |") == 2
+    ablation_section = markdown.split("## Robustness: hyperparameter ablations")[1]
+    ablation_section = ablation_section.split("## Robustness across task regimes")[0]
+    assert ablation_section.count("| * |") == 2
     # Reference and spread lines are rendered per operating point.
     assert markdown.count("Fixed-beta KDA reference on identical draws:") == 2
     assert markdown.count("Across-cell recall-accuracy spread") == 2
     # Both ablation configs are embedded verbatim.
     assert "Precision-gated ablation config (#51)" in markdown
     assert "RLS-lite ablation config (#54)" in markdown
+
+
+def test_renderer_regime_section_on_tiny_configs():
+    """The #50/#52 regime section renders all four full-grid tables, marks
+    the default regime cell, and embeds both robustness configs."""
+    renderer = _load_renderer()
+    markdown = renderer.build_report_markdown(**_tiny_configs())
+    for heading in (
+        "### Calibration failure rate by regime (#50 grid)",
+        "### Calibration AUROC by regime (#50 grid)",
+        "### Routing endpoints by regime (#52 grid)",
+        "### Routing best/worst adaptive gain by regime (#52 grid)",
+    ):
+        assert heading in markdown, f"missing heading {heading!r}"
+    regime_section = markdown.split("## Robustness across task regimes")[1]
+    regime_section = regime_section.split("## Computational overhead")[0]
+    # Tiny grids: 2 cells ((4, 0.9) and the default (8, 0.9)) — per default
+    # cell: 3 failure rows, 6 AUROC rows, 3 endpoint rows, 5 gain rows.
+    assert regime_section.count("| * |") == 3 + 6 + 3 + 5
+    # Unavailable native signals render as the literal 'unavailable'.
+    assert "unavailable" in regime_section
+    # Both robustness configs are embedded verbatim.
+    assert "Calibration robustness config (#50)" in markdown
+    assert "Routing robustness config (#52)" in markdown
 
 
 def test_checked_in_report_reproduces_byte_for_byte():

@@ -4,8 +4,8 @@ The checker (:mod:`kda.experiments.report_consistency`) verifies that the
 checked-in ``docs/PHASE4_RESULTS.md`` tables agree with the recomputed
 #50/#51/#52/#54 extension sweeps: the sweep default cells reproduce the
 #28/#34/#36/#38 pipelines bit-for-bit (capacity/calibration/routing
-cross-checks), and the report's robustness section embeds the #51/#54
-ablation grids in full, cross-checked cell-by-cell against fresh full-grid
+cross-checks), and the report's robustness sections embed the #50/#51/#52/#54
+grids in full, cross-checked cell-by-cell against fresh full-grid
 runs. Tests cover the markdown parser on synthetic input, the formatting
 helpers against hand-computed strings, expectation construction on
 hand-built reports, mismatch detection on corrupted reports, and the full
@@ -20,11 +20,12 @@ from pathlib import Path
 import pytest
 
 from kda.experiments import (
+    CalibrationRobustnessConfig,
     PrecisionGatedAblationConfig,
     RLSLiteAblationConfig,
+    RoutingRobustnessConfig,
     check_report_consistency,
-    default_calibration_robustness_config,
-    default_routing_robustness_config,
+    default_regime_cell,
     parse_pipe_tables,
     run_calibration_robustness,
     run_precision_gated_ablation,
@@ -33,10 +34,18 @@ from kda.experiments import (
 )
 from kda.experiments.report_consistency import (
     AUROC_HEADING,
+    CALIBRATION_REGIME_AUROC_HEADING,
+    CALIBRATION_REGIME_FAILURE_HEADER,
+    CALIBRATION_REGIME_FAILURE_HEADING,
     CAPACITY_HEADING,
     PRECISION_GATED_ABLATION_HEADER,
     ROUTING_GAINS_HEADING,
+    ROUTING_REGIME_ENDPOINT_HEADING,
+    ROUTING_REGIME_GAIN_HEADING,
     _compare_rows,
+    calibration_regime_auroc_header,
+    calibration_regime_auroc_rows,
+    calibration_regime_failure_rows,
     capacity_expectations,
     calibration_expectations,
     format_report_ci,
@@ -46,6 +55,8 @@ from kda.experiments.report_consistency import (
     rls_lite_ablation_rows,
     rls_lite_capacity_expectations,
     routing_expectations,
+    routing_regime_endpoint_rows,
+    routing_regime_gain_rows,
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -66,12 +77,14 @@ def ablation_report() -> dict:
 
 @pytest.fixture(scope="module")
 def calibration_robustness_report() -> dict:
-    return run_calibration_robustness(default_calibration_robustness_config())
+    """Full-grid #50 calibration robustness sweep (the default config)."""
+    return run_calibration_robustness(CalibrationRobustnessConfig())
 
 
 @pytest.fixture(scope="module")
 def routing_robustness_report() -> dict:
-    return run_routing_robustness(default_routing_robustness_config())
+    """Full-grid #52 routing robustness sweep (the default config)."""
+    return run_routing_robustness(RoutingRobustnessConfig())
 
 
 @pytest.fixture(scope="module")
@@ -138,6 +151,9 @@ def test_parser_on_checked_in_report_finds_all_cross_checked_tables():
         AUROC_HEADING,
         "### Endpoints",
         ROUTING_GAINS_HEADING,
+        CALIBRATION_REGIME_FAILURE_HEADING,
+        CALIBRATION_REGIME_AUROC_HEADING,
+        ROUTING_REGIME_GAIN_HEADING,
     ):
         assert heading in tables, f"missing heading {heading!r}"
         assert tables[heading], f"no table under {heading!r}"
@@ -345,6 +361,200 @@ def test_calibration_expectations_require_single_cell():
         calibration_expectations({"cells": [{"variants": {}}, {"variants": {}}]})
 
 
+# --- regime row builders (#50/#52 robustness section) ------------------------
+
+HAND_BUILT_CAL_ROBUSTNESS_REPORT = {
+    "config": {
+        "variants": ["kda", "precision-gated-kda"],
+        "signals": ["precision_along_key", "gate_entropy"],
+    },
+    "cells": [
+        {
+            "num_pairs": 8,
+            "collision_cosine": 0.9,
+            "variants": {
+                "kda": {
+                    "failure_rate": {"value": 0.58854, "ci": [0.54427, 0.61979]},
+                    "mean_recall_cosine": 0.46797,
+                    "signals": {
+                        "precision_along_key": {"available": False},
+                        "gate_entropy": {
+                            "available": True,
+                            "auroc": {"value": 0.45864, "ci": [0.39708, 0.52031]},
+                        },
+                    },
+                },
+                "precision-gated-kda": {
+                    "failure_rate": {"value": 0.46615, "ci": [0.44531, 0.48698]},
+                    "mean_recall_cosine": 0.53062,
+                    "signals": {
+                        "precision_along_key": {
+                            "available": True,
+                            "auroc": {"value": 0.87153, "ci": [0.84323, 0.89740]},
+                        },
+                        "gate_entropy": {
+                            "available": True,
+                            "auroc": {"value": 0.48646, "ci": [0.43490, 0.54766]},
+                        },
+                    },
+                },
+            },
+        },
+        {
+            "num_pairs": 16,
+            "collision_cosine": 0.5,
+            "variants": {
+                "kda": {
+                    "failure_rate": {"value": 0.69531, "ci": [0.67760, 0.71354]},
+                    "mean_recall_cosine": 0.29974,
+                    "signals": {
+                        "precision_along_key": {"available": False},
+                        "gate_entropy": {
+                            "available": True,
+                            "auroc": {"value": 0.49896, "ci": [0.42969, 0.56510]},
+                        },
+                    },
+                },
+                "precision-gated-kda": {
+                    "failure_rate": {"value": 0.65104, "ci": [0.63802, 0.66667]},
+                    "mean_recall_cosine": 0.33420,
+                    "signals": {
+                        "precision_along_key": {
+                            "available": True,
+                            "auroc": {"value": 0.97604, "ci": [0.96354, 0.98698]},
+                        },
+                        "gate_entropy": {
+                            "available": True,
+                            "auroc": {"value": 0.49479, "ci": [0.42969, 0.56510]},
+                        },
+                    },
+                },
+            },
+        },
+    ],
+}
+
+
+def test_default_regime_cell_extraction():
+    cell = default_regime_cell(HAND_BUILT_CAL_ROBUSTNESS_REPORT)
+    assert cell["num_pairs"] == 8 and cell["collision_cosine"] == 0.9
+
+
+def test_default_regime_cell_requires_exactly_one_default():
+    with pytest.raises(ValueError, match="exactly one default regime cell"):
+        default_regime_cell({"cells": [{"num_pairs": 4, "collision_cosine": 0.5}]})
+    with pytest.raises(ValueError, match="exactly one default regime cell"):
+        default_regime_cell(
+            {
+                "cells": [
+                    {"num_pairs": 8, "collision_cosine": 0.9},
+                    {"num_pairs": 8, "collision_cosine": 0.9},
+                ]
+            }
+        )
+
+
+def test_calibration_regime_failure_rows_hand_computed():
+    rows = calibration_regime_failure_rows(HAND_BUILT_CAL_ROBUSTNESS_REPORT)
+    assert rows == {
+        CALIBRATION_REGIME_FAILURE_HEADING: [
+            ["8", "0.900", "kda", "*", "0.589 [0.544, 0.620]", "0.468"],
+            ["8", "0.900", "precision-gated-kda", "*", "0.466 [0.445, 0.487]", "0.531"],
+            ["16", "0.500", "kda", "", "0.695 [0.678, 0.714]", "0.300"],
+            ["16", "0.500", "precision-gated-kda", "", "0.651 [0.638, 0.667]", "0.334"],
+        ]
+    }
+
+
+def test_calibration_regime_auroc_rows_hand_computed():
+    report = HAND_BUILT_CAL_ROBUSTNESS_REPORT
+    assert calibration_regime_auroc_header(report) == [
+        "num_pairs", "collision_cosine", "signal", "default",
+        "kda", "precision-gated-kda",
+    ]
+    rows = calibration_regime_auroc_rows(report)
+    assert rows == {
+        CALIBRATION_REGIME_AUROC_HEADING: [
+            ["8", "0.900", "precision_along_key", "*", "unavailable", "0.872 [0.843, 0.897]"],
+            ["8", "0.900", "gate_entropy", "*", "0.459 [0.397, 0.520]", "0.486 [0.435, 0.548]"],
+            ["16", "0.500", "precision_along_key", "", "unavailable", "0.976 [0.964, 0.987]"],
+            ["16", "0.500", "gate_entropy", "", "0.499 [0.430, 0.565]", "0.495 [0.430, 0.565]"],
+        ]
+    }
+
+
+HAND_BUILT_ROUTING_ROBUSTNESS_REPORT = {
+    "config": {
+        "variants": ["kda", "kda-rls-lite"],
+        "signals": ["evidence_along_key", "gate_entropy"],
+    },
+    "cells": [
+        {
+            "num_pairs": 8,
+            "collision_cosine": 0.9,
+            "variants": {
+                "kda": {
+                    "compressed_accuracy": 0.41146,
+                    "exact_accuracy": 1.0,
+                    "exact_headroom": 0.58854,
+                    "signals": {
+                        "evidence_along_key": {"available": False},
+                        "gate_entropy": {
+                            "available": True,
+                            "operating_points": [
+                                {"gain_vs_fixed_ratio": 0.00521, "fallback_rate": 0.01042},
+                                {"gain_vs_fixed_ratio": -0.01563, "fallback_rate": 0.5},
+                            ],
+                        },
+                    },
+                },
+                "kda-rls-lite": {
+                    "compressed_accuracy": 0.46875,
+                    "exact_accuracy": 1.0,
+                    "exact_headroom": 0.53125,
+                    "signals": {
+                        "evidence_along_key": {
+                            "available": True,
+                            "operating_points": [
+                                {"gain_vs_fixed_ratio": 0.01042, "fallback_rate": 0.01042},
+                                {"gain_vs_fixed_ratio": 0.09375, "fallback_rate": 0.29948},
+                            ],
+                        },
+                        "gate_entropy": {
+                            "available": True,
+                            "operating_points": [
+                                {"gain_vs_fixed_ratio": 0.00521, "fallback_rate": 0.01042},
+                                {"gain_vs_fixed_ratio": -0.01563, "fallback_rate": 0.5},
+                            ],
+                        },
+                    },
+                },
+            },
+        },
+    ],
+}
+
+
+def test_routing_regime_endpoint_rows_hand_computed():
+    rows = routing_regime_endpoint_rows(HAND_BUILT_ROUTING_ROBUSTNESS_REPORT)
+    assert rows == {
+        ROUTING_REGIME_ENDPOINT_HEADING: [
+            ["8", "0.900", "kda", "*", "0.411", "1.000", "0.589"],
+            ["8", "0.900", "kda-rls-lite", "*", "0.469", "1.000", "0.531"],
+        ]
+    }
+
+
+def test_routing_regime_gain_rows_hand_computed():
+    rows = routing_regime_gain_rows(HAND_BUILT_ROUTING_ROBUSTNESS_REPORT)
+    assert rows == {
+        ROUTING_REGIME_GAIN_HEADING: [
+            ["8", "0.900", "evidence_along_key", "*", "unavailable", "0.094 @ 0.299 / 0.010 @ 0.010"],
+            ["8", "0.900", "gate_entropy", "*", "0.005 @ 0.010 / -0.016 @ 0.500", "0.005 @ 0.010 / -0.016 @ 0.500"],
+        ]
+    }
+
+
 def test_routing_expectations_unavailable_and_best_worst():
     report = {
         "cells": [
@@ -425,6 +635,41 @@ def test_checked_in_report_ablation_tables_cross_checked(
         (c["table"], c["row"]) for c in ablation_checks if c["row"] != "(header)"
     }
     assert len(compared_rows) == 4 * 12
+
+
+def test_checked_in_report_regime_tables_cross_checked(
+    report_markdown, ablation_report, calibration_robustness_report,
+    routing_robustness_report, rls_lite_ablation_report,
+):
+    """The report's #50/#52 regime tables are cross-checked cell-by-cell
+    against fresh full-grid recomputation: the failure-rate table (1 header +
+    9 cells x 3 variants x 6 columns), the AUROC table (1 + 9 x 6 signals x
+    7), the endpoints table (1 + 27 x 7), and the gain table (1 + 9 x 5
+    signals x 7) — 1048 checks, all matching."""
+    result = check_report_consistency(
+        report_markdown,
+        ablation_report=ablation_report,
+        calibration_robustness_report=calibration_robustness_report,
+        routing_robustness_report=routing_robustness_report,
+        rls_lite_ablation_report=rls_lite_ablation_report,
+    )
+    regime_checks = [
+        c for c in result["checks"] if "regime" in c["table"]
+    ]
+    assert len(regime_checks) == (1 + 27 * 6) + (1 + 54 * 7) + (1 + 27 * 7) + (1 + 45 * 7)
+    assert all(c["match"] for c in regime_checks)
+    # Every grid cell is covered, not just the default cell.
+    compared_rows = {
+        (c["table"], c["row"]) for c in regime_checks if c["row"] != "(header)"
+    }
+    assert len(compared_rows) == 27 + 54 + 27 + 45
+    # The default regime rows are among them and carry the marker column.
+    default_checks = [
+        c for c in regime_checks
+        if c["column"] == "default" and c["expected"] == "*"
+    ]
+    assert len(default_checks) == 3 + 6 + 3 + 5  # rows at the (8, 0.9) cell
+    assert all(c["match"] for c in default_checks)
 
 
 def test_checked_in_report_rls_lite_rows_cross_checked(
@@ -547,6 +792,30 @@ def test_mismatch_detection_on_corrupted_ablation_row(
     assert bad[0]["actual"] == "0.999 [0.998, 1.000]"
 
 
+def test_mismatch_detection_on_corrupted_regime_cell(
+    report_markdown, ablation_report, calibration_robustness_report,
+    routing_robustness_report, rls_lite_ablation_report,
+):
+    """A hand edit to a #50 regime-table cell (a string that appears nowhere
+    else in the report) must flag exactly that cell."""
+    corrupted = report_markdown.replace("0.130 [0.088, 0.177]", "0.999 [0.998, 1.000]")
+    assert corrupted != report_markdown
+    result = check_report_consistency(
+        corrupted,
+        ablation_report=ablation_report,
+        calibration_robustness_report=calibration_robustness_report,
+        routing_robustness_report=routing_robustness_report,
+        rls_lite_ablation_report=rls_lite_ablation_report,
+    )
+    assert not result["all_match"]
+    bad = [c for c in result["checks"] if not c["match"]]
+    assert len(bad) == 1
+    assert bad[0]["table"] == CALIBRATION_REGIME_FAILURE_HEADING
+    assert bad[0]["row"] == "row 0"
+    assert bad[0]["column"] == "failure rate"
+    assert bad[0]["actual"] == "0.999 [0.998, 1.000]"
+
+
 def test_missing_table_is_reported_not_raised(
     ablation_report, calibration_robustness_report, routing_robustness_report,
     rls_lite_ablation_report,
@@ -590,10 +859,10 @@ def test_deterministic_across_runs(report_markdown):
             PrecisionGatedAblationConfig()
         ),
         calibration_robustness_report=run_calibration_robustness(
-            default_calibration_robustness_config()
+            CalibrationRobustnessConfig()
         ),
         routing_robustness_report=run_routing_robustness(
-            default_routing_robustness_config()
+            RoutingRobustnessConfig()
         ),
         rls_lite_ablation_report=run_rls_lite_ablation(RLSLiteAblationConfig()),
     )
@@ -603,10 +872,10 @@ def test_deterministic_across_runs(report_markdown):
             PrecisionGatedAblationConfig()
         ),
         calibration_robustness_report=run_calibration_robustness(
-            default_calibration_robustness_config()
+            CalibrationRobustnessConfig()
         ),
         routing_robustness_report=run_routing_robustness(
-            default_routing_robustness_config()
+            RoutingRobustnessConfig()
         ),
         rls_lite_ablation_report=run_rls_lite_ablation(RLSLiteAblationConfig()),
     )
@@ -679,8 +948,8 @@ def test_positive_control_tiny_sweeps_match_report(tmp_path):
         "|---|---|",
     ]
     calibration = run_calibration_robustness(
-        default_calibration_robustness_config().__class__(
-            num_pairs_grid=(4,),
+        CalibrationRobustnessConfig(
+            num_pairs_grid=(8,),
             collision_cosine_grid=(0.9,),
             seeds=TINY_SEEDS,
             batch_size=TINY_BATCH,
@@ -688,8 +957,8 @@ def test_positive_control_tiny_sweeps_match_report(tmp_path):
         )
     )
     routing = run_routing_robustness(
-        default_routing_robustness_config().__class__(
-            num_pairs_grid=(4,),
+        RoutingRobustnessConfig(
+            num_pairs_grid=(8,),
             collision_cosine_grid=(0.9,),
             seeds=TINY_SEEDS,
             batch_size=TINY_BATCH,
