@@ -1,10 +1,11 @@
 """Generate the Phase 4 results report (issue #34).
 
-Runs the six pre-registered Phase 4 experiment configs — the
+Runs the eight pre-registered Phase 4 experiment configs — the
 capacity/interference and overwrite/recency sweeps of
 :mod:`kda.experiments.report_experiments`, the #28 calibration and #38
-hybrid-routing experiments, and the full-grid #51/#54 hyperparameter
-ablations — and renders ``docs/PHASE4_RESULTS.md`` with all
+hybrid-routing experiments, the full-grid #51/#54 hyperparameter
+ablations, and the full-grid #50/#52 task-regime robustness sweeps — and
+renders ``docs/PHASE4_RESULTS.md`` with all
 tables produced from those checked-in configs (acceptance criterion: every
 figure/table is generated from a checked-in config or script). The output is
 deterministic: seeded experiments, fixed float formatting, no timestamps.
@@ -20,25 +21,37 @@ from pathlib import Path
 
 from kda.experiments import (
     CalibrationConfig,
+    CalibrationRobustnessConfig,
     CapacityConfig,
     OverwriteConfig,
     PrecisionGatedAblationConfig,
     RLSLiteAblationConfig,
     RoutingExperimentConfig,
+    RoutingRobustnessConfig,
     precision_gated_ablation_heading,
     precision_gated_ablation_rows,
     rls_lite_ablation_heading,
     rls_lite_ablation_rows,
     run_calibration_experiment,
+    run_calibration_robustness,
     run_capacity_experiment,
     run_overwrite_experiment,
     run_precision_gated_ablation,
     run_rls_lite_ablation,
     run_routing_experiment,
+    run_routing_robustness,
 )
 from kda.experiments.report_consistency import (
+    CALIBRATION_REGIME_FAILURE_HEADER,
     PRECISION_GATED_ABLATION_HEADER,
     RLS_LITE_ABLATION_HEADER,
+    ROUTING_REGIME_ENDPOINT_HEADER,
+    calibration_regime_auroc_header,
+    calibration_regime_auroc_rows,
+    calibration_regime_failure_rows,
+    routing_regime_endpoint_rows,
+    routing_regime_gain_header,
+    routing_regime_gain_rows,
 )
 
 REPORT_PATH = Path(__file__).resolve().parent.parent / "docs" / "PHASE4_RESULTS.md"
@@ -206,7 +219,7 @@ def _calibration_section(report: dict) -> list[str]:
         "### Failure rates",
         "",
         "| variant | failure rate | mean recall cosine |",
-        "|---|---|---|",
+        "|---|---|---|---|",
     ]
     for name in variants:
         section = report["variants"][name]
@@ -283,7 +296,7 @@ def _routing_section(report: dict) -> list[str]:
     return lines
 
 
-def _ablation_table(header: list[str], rows: list[list[str]]) -> list[str]:
+def _pipe_table(header: list[str], rows: list[list[str]]) -> list[str]:
     lines = ["| " + " | ".join(header) + " |", "|" + "---|" * len(header)]
     lines += ["| " + " | ".join(row) + " |" for row in rows]
     return lines
@@ -297,7 +310,7 @@ def _ablation_block(report, heading_fn, rows_fn, header) -> list[str]:
     for point in report["operating_points"]:
         heading = heading_fn(point["num_pairs"], point["collision_cosine"])
         lines += [heading, ""]
-        lines += _ablation_table(header, rows_by_heading[heading])
+        lines += _pipe_table(header, rows_by_heading[heading])
         reference = point["reference"]["kda"]
         values = [cell["recall_accuracy"]["value"] for cell in point["cells"]]
         spread = max(values) - min(values)
@@ -364,6 +377,89 @@ def _ablation_section(precision_report: dict, rls_lite_report: dict) -> list[str
         "cosine shifts by at most 1e-4); `beta_max = 0.500` slightly "
         "*raises* recall at 8 pairs with overlapping CIs — a direction, "
         "not a claim.",
+        "",
+    ]
+    return lines
+
+
+def _robustness_regime_section(
+    calibration_robustness_report: dict, routing_robustness_report: dict
+) -> list[str]:
+    """Full-grid #50/#52 regime tables + reading, from the checked-in configs."""
+
+    lines = [
+        "## Robustness across task regimes (#50, #52)",
+        "",
+        "The calibration (#28) and routing (#38) tables above are measured at "
+        "one pre-registered operating point (8 pairs, collision cosine "
+        "0.900). The two sweeps below re-run both pipelines on a "
+        "pre-registered grid of task regimes (sequence load x collision "
+        "cosine); every grid cell is rendered, no cell is filtered. Rows at "
+        "the default operating point (marked `*`) reproduce the corresponding "
+        "tables above exactly, since every grid cell runs on the identical "
+        "task/gate draws as the base pipeline. Full grids and analysis in "
+        "PRs #50/#52; these tables are cross-checked cell-by-cell against a "
+        "fresh recomputation by `examples/report_consistency.py`.",
+        "",
+    ]
+    for heading, rows in calibration_regime_failure_rows(
+        calibration_robustness_report
+    ).items():
+        lines += [heading, ""]
+        lines += _pipe_table(CALIBRATION_REGIME_FAILURE_HEADER, rows)
+        lines += [""]
+    for heading, rows in calibration_regime_auroc_rows(
+        calibration_robustness_report
+    ).items():
+        lines += [heading, ""]
+        lines += _pipe_table(
+            calibration_regime_auroc_header(calibration_robustness_report), rows
+        )
+        lines += [""]
+    for heading, rows in routing_regime_endpoint_rows(
+        routing_robustness_report
+    ).items():
+        lines += [heading, ""]
+        lines += _pipe_table(ROUTING_REGIME_ENDPOINT_HEADER, rows)
+        lines += [""]
+    for heading, rows in routing_regime_gain_rows(
+        routing_robustness_report
+    ).items():
+        lines += [heading, ""]
+        lines += _pipe_table(
+            routing_regime_gain_header(routing_robustness_report), rows
+        )
+        lines += [""]
+    lines += [
+        "Reading (every claim is visible in the tables above):",
+        "",
+        "- **The #28 calibration headline is regime-stable**: the native "
+        "signals stay well above chance in all nine cells — "
+        "`precision_along_key` AUROC ranges [0.666, 0.976] and rises with "
+        "load in every cosine column; `evidence_along_key` stays in "
+        "[0.688, 0.840] with no monotone trend — while the generic proxies "
+        "remain flat or anti-correlated everywhere (`prediction_error_norm` "
+        "peaks at 0.508; `gate_entropy` stays within [0.451, 0.581]; "
+        "`state_effective_rank` never exceeds 0.437).",
+        "- **The #38 routing consequence is regime-stable**: the native "
+        "signals are the only ones with no losing operating point anywhere "
+        "— their worst threshold's gain over matched fixed-ratio routing is "
+        ">= 0.000 in every cell (best gains reach +0.167 for precision at "
+        "16 pairs). `prediction_error_norm` has a negative-worst operating "
+        "point in 9/9 cells for every variant; `key_collision_score` and "
+        "`gate_entropy` in 7-9 of 9.",
+        "- **Honest negative — the exact fallback is imperfect at collision "
+        "cosine 0.990**: exact accuracy there is 0.988-0.992, not 1.000 — "
+        "the temperature-0.100 softmax readout cannot fully separate "
+        "near-identical keys — so the fallback is not literally exact at "
+        "that interference level.",
+        "- **Failure rates grow with load and collision cosine** for all "
+        "three variants (the 16-pair KDA row is flat between cosines 0.900 "
+        "and 0.990: 0.780 vs 0.779). Precision-gated KDA has the lowest "
+        "failure rate in 8 of 9 cells — KDA-RLS-lite edges it at (4 pairs, "
+        "cosine 0.990), 0.375 vs 0.385 with overlapping CIs — and its "
+        "margin over fixed-beta KDA narrows at 16 pairs, consistent with "
+        "the \"modest, not transformative\" reading above.",
         "",
     ]
     return lines
@@ -491,6 +587,10 @@ tables above.
   gating buys a few accuracy points at high collision cosines and reduces
   stale-value dominance at these defaults; it does not remove the capacity
   cliff.
+- **The exact-attention fallback is not literally exact at extreme
+  collision**: at collision cosine 0.990 its own recall accuracy is
+  0.988-0.992 (the temperature-0.100 softmax readout cannot fully separate
+  near-identical keys), visible in the #52 endpoints table above.
 - **The prototypes are sensitive to their own knobs, mostly through failure
   modes**: in the ablation tables above, forgetting `0.900` degrades
   precision-gated recall at every grid point, process noise `0.050` never
@@ -516,6 +616,8 @@ def build_report_markdown(
     routing_config: RoutingExperimentConfig | None = None,
     precision_ablation_config: PrecisionGatedAblationConfig | None = None,
     rls_lite_ablation_config: RLSLiteAblationConfig | None = None,
+    calibration_robustness_config: CalibrationRobustnessConfig | None = None,
+    routing_robustness_config: RoutingRobustnessConfig | None = None,
 ) -> str:
     """Run the pre-registered Phase 4 experiments and render the report.
 
@@ -533,6 +635,12 @@ def build_report_markdown(
         precision_ablation_config or PrecisionGatedAblationConfig()
     )
     rls_lite_ablation_config = rls_lite_ablation_config or RLSLiteAblationConfig()
+    calibration_robustness_config = (
+        calibration_robustness_config or CalibrationRobustnessConfig()
+    )
+    routing_robustness_config = (
+        routing_robustness_config or RoutingRobustnessConfig()
+    )
 
     capacity_report = run_capacity_experiment(capacity_config)
     overwrite_report = run_overwrite_experiment(overwrite_config)
@@ -542,6 +650,12 @@ def build_report_markdown(
         precision_ablation_config
     )
     rls_lite_ablation_report = run_rls_lite_ablation(rls_lite_ablation_config)
+    calibration_robustness_report = run_calibration_robustness(
+        calibration_robustness_config
+    )
+    routing_robustness_report = run_routing_robustness(
+        routing_robustness_config
+    )
 
     parts = [_PROSE_HEADER]
     parts += _capacity_section(capacity_report) + [""]
@@ -551,6 +665,9 @@ def build_report_markdown(
     parts += _routing_section(routing_report) + [""]
     parts += _ablation_section(
         precision_ablation_report, rls_lite_ablation_report
+    ) + [""]
+    parts += _robustness_regime_section(
+        calibration_robustness_report, routing_robustness_report
     ) + [""]
     parts.append(_PROSE_OVERHEAD)
     parts += _config_block("Capacity/interference config (issue #34 sweeps)",
@@ -565,6 +682,10 @@ def build_report_markdown(
                            precision_ablation_report["config"])
     parts += _config_block("RLS-lite ablation config (#54)",
                            rls_lite_ablation_report["config"])
+    parts += _config_block("Calibration robustness config (#50)",
+                           calibration_robustness_report["config"])
+    parts += _config_block("Routing robustness config (#52)",
+                           routing_robustness_report["config"])
     return "\n".join(parts).rstrip("\n") + "\n"
 
 
