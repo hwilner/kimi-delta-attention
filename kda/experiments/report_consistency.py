@@ -14,12 +14,12 @@ the ablations' default cells, the report's calibration AUROC table must equal
 the robustness sweep's ``(8, 0.9)`` cell, and the report's routing section
 must equal the routing sweep's default cell.
 
-The report also embeds the two ablation sweeps *in full* (the robustness
-section of the report): every grid cell of both ablations is rendered as a
-table row. Those
-tables are cross-checked cell-by-cell against a fresh run of the checked-in
-full-grid ablation configs (the grids are small enough that the
-recomputation takes seconds), so a hand edit to any ablation row — not just
+The report also embeds the four extension sweeps *in full*: the robustness
+section renders every grid cell of both hyperparameter ablations, and the
+regime-robustness section renders every regime cell of the #50/#52 sweeps.
+Those tables are cross-checked cell-by-cell against fresh runs of the
+checked-in full-grid configs (the grids are small enough that the
+recomputation takes seconds), so a hand edit to any embedded row — not just
 the default cell — is caught.
 
 This module automates those cross-checks: it parses the checked-in report's
@@ -34,8 +34,9 @@ Scope: only the overlapping numbers are checked — the #51 ablation runs KDA
 (reference) and precision-gated KDA, the #54 ablation runs KDA (reference)
 and KDA-RLS-lite, and the robustness sweeps run KDA,
 KDA-RLS-lite, and precision-gated KDA, so GDN-2/EDA rows and non-default
-regime cells are out of scope here (the per-sweep regression tests already
-cover their own pipelines). The KDA reference rows of the two ablations are
+regime cells of the base tables are out of scope here (the per-sweep
+regression tests already cover their own pipelines). The KDA reference rows
+of the two ablations are
 two renderings of the same pipeline as well; they are cross-checked via the
 #51 expectations, so the #54 side contributes its RLS-lite default cell. The
 ablation reference *lines* in the report's robustness section are prose
@@ -51,10 +52,17 @@ __all__ = [
     "format_report_ci",
     "default_calibration_robustness_config",
     "default_routing_robustness_config",
+    "default_regime_cell",
     "precision_gated_ablation_heading",
     "rls_lite_ablation_heading",
     "precision_gated_ablation_rows",
     "rls_lite_ablation_rows",
+    "calibration_regime_auroc_header",
+    "calibration_regime_auroc_rows",
+    "calibration_regime_failure_rows",
+    "routing_regime_endpoint_rows",
+    "routing_regime_gain_header",
+    "routing_regime_gain_rows",
     "capacity_expectations",
     "rls_lite_capacity_expectations",
     "calibration_expectations",
@@ -62,6 +70,8 @@ __all__ = [
     "check_report_consistency",
     "PRECISION_GATED_ABLATION_HEADER",
     "RLS_LITE_ABLATION_HEADER",
+    "CALIBRATION_REGIME_FAILURE_HEADER",
+    "ROUTING_REGIME_ENDPOINT_HEADER",
 ]
 
 from .calibration_robustness import CalibrationRobustnessConfig
@@ -75,6 +85,22 @@ FAILURE_HEADING = "### Failure rates"
 AUROC_HEADING = "### AUROC of each uncertainty signal"
 ENDPOINTS_HEADING = "### Endpoints"
 ROUTING_GAINS_HEADING = "### Best / worst adaptive gain over matched fixed-ratio routing"
+
+# Headings of the report's regime-robustness tables (#50/#52 full grids).
+CALIBRATION_REGIME_FAILURE_HEADING = (
+    "### Calibration failure rate by regime (#50 grid)"
+)
+CALIBRATION_REGIME_AUROC_HEADING = "### Calibration AUROC by regime (#50 grid)"
+ROUTING_REGIME_ENDPOINT_HEADING = "### Routing endpoints by regime (#52 grid)"
+ROUTING_REGIME_GAIN_HEADING = (
+    "### Routing best/worst adaptive gain by regime (#52 grid)"
+)
+
+# The #28/#38 default operating point. Both robustness grids contain this
+# regime cell exactly once; rows at it carry the report's ``*`` marker and
+# reproduce the corresponding base tables bit-for-bit.
+DEFAULT_REGIME_NUM_PAIRS = 8
+DEFAULT_REGIME_COLLISION_COSINE = 0.9
 
 
 def parse_pipe_tables(markdown: str) -> dict[str, list[dict]]:
@@ -147,8 +173,8 @@ def default_calibration_robustness_config() -> CalibrationRobustnessConfig:
     """Calibration robustness config restricted to the #28 default cell."""
 
     return CalibrationRobustnessConfig(
-        num_pairs_grid=(8,),
-        collision_cosine_grid=(0.9,),
+        num_pairs_grid=(DEFAULT_REGIME_NUM_PAIRS,),
+        collision_cosine_grid=(DEFAULT_REGIME_COLLISION_COSINE,),
     )
 
 
@@ -156,9 +182,39 @@ def default_routing_robustness_config() -> RoutingRobustnessConfig:
     """Routing robustness config restricted to the #38 default cell."""
 
     return RoutingRobustnessConfig(
-        num_pairs_grid=(8,),
-        collision_cosine_grid=(0.9,),
+        num_pairs_grid=(DEFAULT_REGIME_NUM_PAIRS,),
+        collision_cosine_grid=(DEFAULT_REGIME_COLLISION_COSINE,),
     )
+
+
+def _is_default_regime_cell(cell: dict) -> bool:
+    """Whether a robustness-sweep cell is the #28/#38 default regime."""
+
+    return (
+        int(cell["num_pairs"]) == DEFAULT_REGIME_NUM_PAIRS
+        and float(cell["collision_cosine"]) == DEFAULT_REGIME_COLLISION_COSINE
+    )
+
+
+def default_regime_cell(report: dict) -> dict:
+    """Extract the unique default-regime cell from a robustness sweep report.
+
+    The checked-in #50/#52 grids contain the #28/#38 default operating point
+    (``num_pairs=8``, ``collision_cosine=0.9``) exactly once; that cell
+    reproduces the corresponding base pipeline bit-for-bit and feeds the
+    base-table cross-checks. Raises if the grid does not contain exactly one
+    default cell (a sweep over other regimes cannot cross-check the base
+    tables).
+    """
+
+    matches = [c for c in report["cells"] if _is_default_regime_cell(c)]
+    if len(matches) != 1:
+        raise ValueError(
+            "robustness report must contain exactly one default regime cell "
+            f"(num_pairs={DEFAULT_REGIME_NUM_PAIRS}, collision_cosine="
+            f"{DEFAULT_REGIME_COLLISION_COSINE}), found {len(matches)}"
+        )
+    return matches[0]
 
 
 def capacity_expectations(ablation_report: dict) -> dict[tuple[str, int], str]:
@@ -311,6 +367,177 @@ def rls_lite_ablation_rows(report: dict) -> dict[str, list[list[str]]]:
     return tables
 
 
+# --- regime robustness-section tables (#50/#52 full-grid cross-checks) -----
+
+# Header rows of the report's per-(cell, variant) regime tables; the variant
+# is a row key here, so these headers are fixed. The per-(cell, signal)
+# tables carry one column per variant; their headers are built from the
+# report's embedded config by the ``*_header`` functions below so the
+# generator and this checker always agree on the column order.
+CALIBRATION_REGIME_FAILURE_HEADER = [
+    "num_pairs",
+    "collision_cosine",
+    "variant",
+    "default",
+    "failure rate",
+    "mean recall cosine",
+]
+ROUTING_REGIME_ENDPOINT_HEADER = [
+    "num_pairs",
+    "collision_cosine",
+    "variant",
+    "default",
+    "compressed accuracy",
+    "exact accuracy",
+    "headroom",
+]
+
+
+def _regime_prefix(cell: dict) -> list[str]:
+    """Leading ``num_pairs | collision_cosine`` cells of a regime row."""
+
+    return [
+        str(int(cell["num_pairs"])),
+        format_report_float(float(cell["collision_cosine"])),
+    ]
+
+
+def _regime_marker(cell: dict) -> str:
+    """The report's ``*`` marker on rows of the default regime cell."""
+
+    return "*" if _is_default_regime_cell(cell) else ""
+
+
+def _gain_cell(entry: dict) -> str:
+    """The report's ``best @ rate / worst @ rate`` summary of one signal.
+
+    Best/worst are taken over the pre-registered threshold grid by gain over
+    the matched-budget fixed-ratio router (flat and negative operating points
+    included, exactly as the report renders them); signals a variant does not
+    expose render as the literal ``unavailable``.
+    """
+
+    if not entry["available"]:
+        return "unavailable"
+    points = entry["operating_points"]
+    best = max(points, key=lambda p: p["gain_vs_fixed_ratio"])
+    worst = min(points, key=lambda p: p["gain_vs_fixed_ratio"])
+    return (
+        f"{format_report_float(best['gain_vs_fixed_ratio'])} @ "
+        f"{format_report_float(best['fallback_rate'])} / "
+        f"{format_report_float(worst['gain_vs_fixed_ratio'])} @ "
+        f"{format_report_float(worst['fallback_rate'])}"
+    )
+
+
+def calibration_regime_failure_rows(report: dict) -> dict[str, list[list[str]]]:
+    """Expected #50 failure-rate table rows, keyed by table heading.
+
+    One row per (regime cell, variant) in the config's deterministic
+    Cartesian cell order and variant order; rows of the default regime cell
+    carry the ``*`` marker. The generator and this checker iterate the same
+    orders, so rows are compared positionally.
+    """
+
+    rows = []
+    for cell in report["cells"]:
+        for variant in report["config"]["variants"]:
+            section = cell["variants"][variant]
+            rows.append(
+                _regime_prefix(cell)
+                + [
+                    str(variant),
+                    _regime_marker(cell),
+                    format_report_ci(section["failure_rate"]),
+                    format_report_float(section["mean_recall_cosine"]),
+                ]
+            )
+    return {CALIBRATION_REGIME_FAILURE_HEADING: rows}
+
+
+def calibration_regime_auroc_header(report: dict) -> list[str]:
+    """Header of the report's #50 AUROC table (one column per variant)."""
+
+    return ["num_pairs", "collision_cosine", "signal", "default"] + [
+        str(variant) for variant in report["config"]["variants"]
+    ]
+
+
+def calibration_regime_auroc_rows(report: dict) -> dict[str, list[list[str]]]:
+    """Expected #50 AUROC table rows, keyed by table heading.
+
+    One row per (regime cell, signal); signals a variant does not expose
+    render as the literal ``unavailable``. Same ordering conventions as
+    :func:`calibration_regime_failure_rows`.
+    """
+
+    rows = []
+    for cell in report["cells"]:
+        for signal in report["config"]["signals"]:
+            row = _regime_prefix(cell) + [str(signal), _regime_marker(cell)]
+            for variant in report["config"]["variants"]:
+                entry = cell["variants"][variant]["signals"][signal]
+                row.append(
+                    format_report_ci(entry["auroc"])
+                    if entry["available"]
+                    else "unavailable"
+                )
+            rows.append(row)
+    return {CALIBRATION_REGIME_AUROC_HEADING: rows}
+
+
+def routing_regime_endpoint_rows(report: dict) -> dict[str, list[list[str]]]:
+    """Expected #52 endpoint table rows, keyed by table heading.
+
+    One row per (regime cell, variant), same conventions as
+    :func:`calibration_regime_failure_rows`.
+    """
+
+    rows = []
+    for cell in report["cells"]:
+        for variant in report["config"]["variants"]:
+            section = cell["variants"][variant]
+            rows.append(
+                _regime_prefix(cell)
+                + [
+                    str(variant),
+                    _regime_marker(cell),
+                    format_report_float(section["compressed_accuracy"]),
+                    format_report_float(section["exact_accuracy"]),
+                    format_report_float(section["exact_headroom"]),
+                ]
+            )
+    return {ROUTING_REGIME_ENDPOINT_HEADING: rows}
+
+
+def routing_regime_gain_header(report: dict) -> list[str]:
+    """Header of the report's #52 gain table (one column per variant)."""
+
+    return ["num_pairs", "collision_cosine", "signal", "default"] + [
+        str(variant) for variant in report["config"]["variants"]
+    ]
+
+
+def routing_regime_gain_rows(report: dict) -> dict[str, list[list[str]]]:
+    """Expected #52 gain table rows, keyed by table heading.
+
+    One row per (regime cell, signal) with the report's ``best @ rate /
+    worst @ rate`` summary per variant. Same ordering conventions as
+    :func:`calibration_regime_failure_rows`.
+    """
+
+    rows = []
+    for cell in report["cells"]:
+        for signal in report["config"]["signals"]:
+            row = _regime_prefix(cell) + [str(signal), _regime_marker(cell)]
+            for variant in report["config"]["variants"]:
+                row.append(
+                    _gain_cell(cell["variants"][variant]["signals"][signal])
+                )
+            rows.append(row)
+    return {ROUTING_REGIME_GAIN_HEADING: rows}
+
+
 def calibration_expectations(
     robustness_report: dict,
 ) -> dict[str, dict[str, dict[str, str]]]:
@@ -379,18 +606,7 @@ def routing_expectations(
             section["exact_headroom"]
         )
         for signal, entry in section["signals"].items():
-            if not entry["available"]:
-                gains[(signal, variant)] = "unavailable"
-                continue
-            points = entry["operating_points"]
-            best = max(points, key=lambda p: p["gain_vs_fixed_ratio"])
-            worst = min(points, key=lambda p: p["gain_vs_fixed_ratio"])
-            gains[(signal, variant)] = (
-                f"{format_report_float(best['gain_vs_fixed_ratio'])} @ "
-                f"{format_report_float(best['fallback_rate'])} / "
-                f"{format_report_float(worst['gain_vs_fixed_ratio'])} @ "
-                f"{format_report_float(worst['fallback_rate'])}"
-            )
+            gains[(signal, variant)] = _gain_cell(entry)
     return {"endpoints": endpoints, "gains": gains}
 
 
@@ -552,10 +768,16 @@ def check_report_consistency(
             grids feed the ablation-table row checks.
         calibration_robustness_report: Result of
             :func:`kda.experiments.calibration_robustness.run_calibration_robustness`
-            on :func:`default_calibration_robustness_config`.
+            on the checked-in *full-grid* #50 default config
+            (:class:`~kda.experiments.CalibrationRobustnessConfig`). The
+            unique default regime cell feeds the calibration-table
+            expectations; the full grid feeds the regime-table row checks.
         routing_robustness_report: Result of
             :func:`kda.experiments.routing_robustness.run_routing_robustness`
-            on :func:`default_routing_robustness_config`.
+            on the checked-in *full-grid* #52 default config
+            (:class:`~kda.experiments.RoutingRobustnessConfig`), feeding the
+            routing-section expectations and regime-table row checks the same
+            way.
         rls_lite_ablation_report: Result of
             :func:`kda.experiments.rls_lite_ablation.run_rls_lite_ablation`
             on the checked-in *full-grid* #54 default config
@@ -582,7 +804,9 @@ def check_report_consistency(
         },
     )
 
-    calibration = calibration_expectations(calibration_robustness_report)
+    calibration = calibration_expectations(
+        {"cells": [default_regime_cell(calibration_robustness_report)]}
+    )
     _compare_cells(
         checks,
         table_name=FAILURE_HEADING,
@@ -596,7 +820,9 @@ def check_report_consistency(
         expectations=calibration["auroc"],
     )
 
-    routing = routing_expectations(routing_robustness_report)
+    routing = routing_expectations(
+        {"cells": [default_regime_cell(routing_robustness_report)]}
+    )
     _compare_cells(
         checks,
         table_name=ENDPOINTS_HEADING,
@@ -631,6 +857,51 @@ def check_report_consistency(
             expected_rows=expected_rows,
         )
 
+    for heading, expected_rows in calibration_regime_failure_rows(
+        calibration_robustness_report
+    ).items():
+        _compare_rows(
+            checks,
+            table_name=heading,
+            table=_table_by_heading(tables, heading),
+            expected_header=CALIBRATION_REGIME_FAILURE_HEADER,
+            expected_rows=expected_rows,
+        )
+    for heading, expected_rows in calibration_regime_auroc_rows(
+        calibration_robustness_report
+    ).items():
+        _compare_rows(
+            checks,
+            table_name=heading,
+            table=_table_by_heading(tables, heading),
+            expected_header=calibration_regime_auroc_header(
+                calibration_robustness_report
+            ),
+            expected_rows=expected_rows,
+        )
+    for heading, expected_rows in routing_regime_endpoint_rows(
+        routing_robustness_report
+    ).items():
+        _compare_rows(
+            checks,
+            table_name=heading,
+            table=_table_by_heading(tables, heading),
+            expected_header=ROUTING_REGIME_ENDPOINT_HEADER,
+            expected_rows=expected_rows,
+        )
+    for heading, expected_rows in routing_regime_gain_rows(
+        routing_robustness_report
+    ).items():
+        _compare_rows(
+            checks,
+            table_name=heading,
+            table=_table_by_heading(tables, heading),
+            expected_header=routing_regime_gain_header(
+                routing_robustness_report
+            ),
+            expected_rows=expected_rows,
+        )
+
     mismatches = [c for c in checks if not c["match"]]
     return {
         "experiment": "phase4-report-consistency",
@@ -640,10 +911,11 @@ def check_report_consistency(
             "must equal the recomputed #50/#51/#52/#54 extension sweeps. The "
             "sweeps' default cells reproduce the #28/#34/#36/#38 pipelines "
             "bit-for-bit (capacity/calibration/routing cross-checks), and "
-            "the report's ablation tables embed the #51/#54 full grids, "
-            "which are cross-checked cell-by-cell against a fresh full-grid "
-            "run. Compared as formatted strings in the report's fixed "
-            "three-decimal style; mismatches are reported, never corrected."
+            "the report's robustness sections embed the #50/#51/#52/#54 "
+            "full grids, which are cross-checked cell-by-cell against fresh "
+            "full-grid runs. Compared as formatted strings in the report's "
+            "fixed three-decimal style; mismatches are reported, never "
+            "corrected."
         ),
         "num_checks": len(checks),
         "num_mismatches": len(mismatches),
