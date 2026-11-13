@@ -165,7 +165,7 @@ Do internal uncertainty signals predict recall failure? AUROC of each pre-regist
 | evidence_along_key | unavailable | 0.786 [0.753, 0.814] | unavailable |
 | precision_along_key | unavailable | unavailable | 0.872 [0.843, 0.897] |
 | prediction_error_norm | 0.373 [0.321, 0.428] | 0.425 [0.368, 0.482] | 0.406 [0.351, 0.459] |
-| key_collision_score | 0.564 [0.518, 0.605] | 0.607 [0.556, 0.648] | 0.573 [0.518, 0.616] |
+| key_collision_score | 0.500 [0.500, 0.500] | 0.500 [0.500, 0.500] | 0.500 [0.500, 0.500] |
 | gate_entropy | 0.459 [0.397, 0.520] | 0.479 [0.427, 0.526] | 0.486 [0.435, 0.548] |
 | state_effective_rank | 0.245 [0.217, 0.274] | 0.241 [0.209, 0.276] | 0.154 [0.121, 0.188] |
 
@@ -189,8 +189,8 @@ Uncertainty-aware routing between the compressed memory and an exact-attention f
 | prediction_error_norm | 0.005 @ 0.010 / -0.047 @ 0.500 | 0.005 @ 0.052 / -0.034 @ 0.500 | 0.003 @ 0.010 / -0.036 @ 0.201 |
 | precision_along_key | unavailable | unavailable | 0.146 @ 0.500 / 0.008 @ 0.010 |
 | evidence_along_key | unavailable | 0.094 @ 0.299 / 0.010 @ 0.010 | unavailable |
-| key_collision_score | 0.023 @ 0.344 / 0.005 @ 0.625 | 0.029 @ 0.156 / 0.008 @ 0.031 | 0.021 @ 0.625 / 0.003 @ 0.031 |
-| gate_entropy | 0.005 @ 0.010 / -0.016 @ 0.102 | 0.005 @ 0.010 / -0.016 @ 0.500 | 0.003 @ 0.010 / -0.018 @ 0.102 |
+| key_collision_score | 0.000 @ 1.000 / 0.000 @ 1.000 | 0.000 @ 1.000 / 0.000 @ 1.000 | 0.000 @ 1.000 / 0.000 @ 1.000 |
+| gate_entropy | 0.005 @ 0.010 / -0.016 @ 0.503 | 0.005 @ 0.010 / -0.018 @ 0.503 | 0.003 @ 0.010 / -0.018 @ 0.102 |
 
 
 ## Robustness: hyperparameter ablations (#51, #54)
@@ -324,57 +324,57 @@ The calibration (#28) and routing (#38) tables above are measured at one pre-reg
 | 4 | 0.500 | evidence_along_key |  | unavailable | 0.781 [0.662, 0.885] | unavailable |
 | 4 | 0.500 | precision_along_key |  | unavailable | unavailable | 0.790 [0.694, 0.890] |
 | 4 | 0.500 | prediction_error_norm |  | 0.469 [0.373, 0.555] | 0.495 [0.362, 0.610] | 0.300 [0.184, 0.432] |
-| 4 | 0.500 | key_collision_score |  | 0.535 [0.404, 0.627] | 0.503 [0.348, 0.628] | 0.561 [0.386, 0.700] |
-| 4 | 0.500 | gate_entropy |  | 0.581 [0.483, 0.658] | 0.541 [0.427, 0.642] | 0.566 [0.453, 0.674] |
-| 4 | 0.500 | state_effective_rank |  | 0.314 [0.217, 0.417] | 0.265 [0.172, 0.351] | 0.208 [0.140, 0.273] |
+| 4 | 0.500 | key_collision_score |  | 0.488 [0.475, 0.500] | 0.489 [0.476, 0.500] | 0.489 [0.477, 0.500] |
+| 4 | 0.500 | gate_entropy |  | 0.581 [0.483, 0.658] | 0.541 [0.427, 0.642] | 0.567 [0.454, 0.674] |
+| 4 | 0.500 | state_effective_rank |  | 0.318 [0.225, 0.420] | 0.260 [0.172, 0.347] | 0.200 [0.115, 0.265] |
 | 4 | 0.900 | evidence_along_key |  | unavailable | 0.688 [0.614, 0.764] | unavailable |
 | 4 | 0.900 | precision_along_key |  | unavailable | unavailable | 0.666 [0.601, 0.717] |
 | 4 | 0.900 | prediction_error_norm |  | 0.284 [0.217, 0.355] | 0.340 [0.263, 0.420] | 0.300 [0.224, 0.362] |
-| 4 | 0.900 | key_collision_score |  | 0.451 [0.392, 0.514] | 0.458 [0.403, 0.518] | 0.493 [0.422, 0.575] |
-| 4 | 0.900 | gate_entropy |  | 0.550 [0.465, 0.633] | 0.520 [0.425, 0.612] | 0.574 [0.480, 0.669] |
-| 4 | 0.900 | state_effective_rank |  | 0.405 [0.349, 0.475] | 0.415 [0.349, 0.472] | 0.405 [0.345, 0.474] |
+| 4 | 0.900 | key_collision_score |  | 0.500 [0.500, 0.500] | 0.500 [0.500, 0.500] | 0.500 [0.500, 0.500] |
+| 4 | 0.900 | gate_entropy |  | 0.550 [0.465, 0.633] | 0.520 [0.425, 0.612] | 0.575 [0.479, 0.669] |
+| 4 | 0.900 | state_effective_rank |  | 0.407 [0.351, 0.473] | 0.415 [0.349, 0.472] | 0.403 [0.343, 0.472] |
 | 4 | 0.990 | evidence_along_key |  | unavailable | 0.698 [0.623, 0.760] | unavailable |
 | 4 | 0.990 | precision_along_key |  | unavailable | unavailable | 0.746 [0.696, 0.788] |
 | 4 | 0.990 | prediction_error_norm |  | 0.281 [0.230, 0.335] | 0.310 [0.244, 0.385] | 0.327 [0.253, 0.391] |
-| 4 | 0.990 | key_collision_score |  | 0.498 [0.462, 0.533] | 0.499 [0.458, 0.532] | 0.469 [0.422, 0.508] |
-| 4 | 0.990 | gate_entropy |  | 0.528 [0.451, 0.615] | 0.518 [0.435, 0.594] | 0.550 [0.459, 0.659] |
-| 4 | 0.990 | state_effective_rank |  | 0.404 [0.365, 0.438] | 0.437 [0.380, 0.490] | 0.361 [0.316, 0.415] |
+| 4 | 0.990 | key_collision_score |  | 0.500 [0.500, 0.500] | 0.500 [0.500, 0.500] | 0.500 [0.500, 0.500] |
+| 4 | 0.990 | gate_entropy |  | 0.529 [0.451, 0.615] | 0.519 [0.435, 0.594] | 0.550 [0.460, 0.660] |
+| 4 | 0.990 | state_effective_rank |  | 0.405 [0.365, 0.438] | 0.437 [0.382, 0.490] | 0.360 [0.315, 0.415] |
 | 8 | 0.500 | evidence_along_key |  | unavailable | 0.840 [0.794, 0.887] | unavailable |
 | 8 | 0.500 | precision_along_key |  | unavailable | unavailable | 0.923 [0.904, 0.941] |
 | 8 | 0.500 | prediction_error_norm |  | 0.465 [0.403, 0.524] | 0.479 [0.394, 0.547] | 0.481 [0.418, 0.529] |
-| 8 | 0.500 | key_collision_score |  | 0.532 [0.478, 0.594] | 0.529 [0.478, 0.581] | 0.504 [0.446, 0.578] |
+| 8 | 0.500 | key_collision_score |  | 0.508 [0.500, 0.519] | 0.510 [0.500, 0.523] | 0.494 [0.484, 0.504] |
 | 8 | 0.500 | gate_entropy |  | 0.498 [0.434, 0.576] | 0.491 [0.438, 0.548] | 0.499 [0.443, 0.579] |
 | 8 | 0.500 | state_effective_rank |  | 0.121 [0.091, 0.151] | 0.123 [0.091, 0.163] | 0.073 [0.058, 0.089] |
 | 8 | 0.900 | evidence_along_key | * | unavailable | 0.786 [0.753, 0.814] | unavailable |
 | 8 | 0.900 | precision_along_key | * | unavailable | unavailable | 0.872 [0.843, 0.897] |
 | 8 | 0.900 | prediction_error_norm | * | 0.373 [0.321, 0.428] | 0.425 [0.368, 0.482] | 0.406 [0.351, 0.459] |
-| 8 | 0.900 | key_collision_score | * | 0.564 [0.518, 0.605] | 0.607 [0.556, 0.648] | 0.573 [0.518, 0.616] |
+| 8 | 0.900 | key_collision_score | * | 0.500 [0.500, 0.500] | 0.500 [0.500, 0.500] | 0.500 [0.500, 0.500] |
 | 8 | 0.900 | gate_entropy | * | 0.459 [0.397, 0.520] | 0.479 [0.427, 0.526] | 0.486 [0.435, 0.548] |
 | 8 | 0.900 | state_effective_rank | * | 0.245 [0.217, 0.274] | 0.241 [0.209, 0.276] | 0.154 [0.121, 0.188] |
 | 8 | 0.990 | evidence_along_key |  | unavailable | 0.760 [0.733, 0.789] | unavailable |
 | 8 | 0.990 | precision_along_key |  | unavailable | unavailable | 0.812 [0.780, 0.840] |
 | 8 | 0.990 | prediction_error_norm |  | 0.308 [0.261, 0.350] | 0.379 [0.318, 0.432] | 0.377 [0.316, 0.434] |
-| 8 | 0.990 | key_collision_score |  | 0.511 [0.466, 0.551] | 0.512 [0.470, 0.552] | 0.507 [0.443, 0.570] |
-| 8 | 0.990 | gate_entropy |  | 0.459 [0.397, 0.515] | 0.451 [0.393, 0.509] | 0.499 [0.443, 0.565] |
+| 8 | 0.990 | key_collision_score |  | 0.500 [0.500, 0.500] | 0.500 [0.500, 0.500] | 0.500 [0.500, 0.500] |
+| 8 | 0.990 | gate_entropy |  | 0.459 [0.397, 0.515] | 0.451 [0.393, 0.509] | 0.499 [0.442, 0.565] |
 | 8 | 0.990 | state_effective_rank |  | 0.284 [0.252, 0.321] | 0.286 [0.247, 0.326] | 0.239 [0.209, 0.273] |
 | 16 | 0.500 | evidence_along_key |  | unavailable | 0.768 [0.730, 0.799] | unavailable |
 | 16 | 0.500 | precision_along_key |  | unavailable | unavailable | 0.976 [0.969, 0.984] |
 | 16 | 0.500 | prediction_error_norm |  | 0.493 [0.462, 0.530] | 0.508 [0.481, 0.541] | 0.508 [0.473, 0.549] |
-| 16 | 0.500 | key_collision_score |  | 0.508 [0.453, 0.551] | 0.513 [0.455, 0.558] | 0.502 [0.452, 0.542] |
+| 16 | 0.500 | key_collision_score |  | 0.511 [0.499, 0.524] | 0.512 [0.500, 0.525] | 0.503 [0.494, 0.514] |
 | 16 | 0.500 | gate_entropy |  | 0.499 [0.450, 0.548] | 0.487 [0.444, 0.530] | 0.495 [0.460, 0.534] |
 | 16 | 0.500 | state_effective_rank |  | 0.129 [0.099, 0.167] | 0.130 [0.100, 0.167] | 0.068 [0.050, 0.091] |
 | 16 | 0.900 | evidence_along_key |  | unavailable | 0.757 [0.724, 0.785] | unavailable |
 | 16 | 0.900 | precision_along_key |  | unavailable | unavailable | 0.927 [0.913, 0.943] |
 | 16 | 0.900 | prediction_error_norm |  | 0.361 [0.325, 0.409] | 0.426 [0.395, 0.466] | 0.451 [0.425, 0.494] |
-| 16 | 0.900 | key_collision_score |  | 0.544 [0.501, 0.587] | 0.535 [0.483, 0.586] | 0.517 [0.477, 0.567] |
+| 16 | 0.900 | key_collision_score |  | 0.500 [0.500, 0.500] | 0.500 [0.500, 0.500] | 0.500 [0.500, 0.500] |
 | 16 | 0.900 | gate_entropy |  | 0.534 [0.490, 0.580] | 0.531 [0.488, 0.570] | 0.512 [0.472, 0.563] |
 | 16 | 0.900 | state_effective_rank |  | 0.174 [0.146, 0.202] | 0.174 [0.141, 0.208] | 0.123 [0.103, 0.143] |
 | 16 | 0.990 | evidence_along_key |  | unavailable | 0.770 [0.730, 0.802] | unavailable |
 | 16 | 0.990 | precision_along_key |  | unavailable | unavailable | 0.907 [0.885, 0.924] |
-| 16 | 0.990 | prediction_error_norm |  | 0.363 [0.328, 0.406] | 0.415 [0.376, 0.458] | 0.465 [0.427, 0.511] |
-| 16 | 0.990 | key_collision_score |  | 0.506 [0.451, 0.569] | 0.504 [0.453, 0.565] | 0.519 [0.473, 0.567] |
-| 16 | 0.990 | gate_entropy |  | 0.506 [0.460, 0.560] | 0.513 [0.466, 0.561] | 0.500 [0.460, 0.544] |
-| 16 | 0.990 | state_effective_rank |  | 0.190 [0.164, 0.219] | 0.192 [0.164, 0.222] | 0.158 [0.140, 0.175] |
+| 16 | 0.990 | prediction_error_norm |  | 0.363 [0.328, 0.406] | 0.415 [0.376, 0.458] | 0.466 [0.427, 0.511] |
+| 16 | 0.990 | key_collision_score |  | 0.500 [0.500, 0.500] | 0.500 [0.500, 0.500] | 0.500 [0.500, 0.500] |
+| 16 | 0.990 | gate_entropy |  | 0.506 [0.460, 0.561] | 0.513 [0.466, 0.561] | 0.500 [0.460, 0.544] |
+| 16 | 0.990 | state_effective_rank |  | 0.190 [0.164, 0.219] | 0.192 [0.164, 0.222] | 0.158 [0.140, 0.176] |
 
 ### Routing endpoints by regime (#52 grid)
 
@@ -415,53 +415,53 @@ The calibration (#28) and routing (#38) tables above are measured at one pre-reg
 | 4 | 0.500 | prediction_error_norm |  | 0.005 @ 0.302 / -0.010 @ 0.104 | 0.005 @ 0.052 / -0.010 @ 0.104 | 0.000 @ 0.052 / -0.026 @ 0.500 |
 | 4 | 0.500 | precision_along_key |  | unavailable | unavailable | 0.021 @ 0.500 / 0.000 @ 0.010 |
 | 4 | 0.500 | evidence_along_key |  | unavailable | 0.031 @ 0.500 / 0.005 @ 0.010 | unavailable |
-| 4 | 0.500 | key_collision_score |  | 0.010 @ 0.161 / 0.000 @ 0.807 | 0.005 @ 0.161 / -0.005 @ 0.443 | 0.000 @ 0.807 / 0.000 @ 0.807 |
+| 4 | 0.500 | key_collision_score |  | 0.000 @ 1.000 / 0.000 @ 1.000 | 0.000 @ 1.000 / 0.000 @ 1.000 | 0.000 @ 1.000 / 0.000 @ 1.000 |
 | 4 | 0.500 | gate_entropy |  | 0.016 @ 0.500 / 0.000 @ 0.104 | 0.010 @ 0.500 / -0.010 @ 0.104 | 0.005 @ 0.500 / -0.005 @ 0.302 |
 | 4 | 0.900 | prediction_error_norm |  | 0.000 @ 0.010 / -0.062 @ 0.500 | 0.005 @ 0.010 / -0.047 @ 0.500 | 0.005 @ 0.052 / -0.094 @ 0.500 |
 | 4 | 0.900 | precision_along_key |  | unavailable | unavailable | 0.047 @ 0.302 / 0.005 @ 0.010 |
 | 4 | 0.900 | evidence_along_key |  | unavailable | 0.068 @ 0.500 / 0.005 @ 0.010 | unavailable |
-| 4 | 0.900 | key_collision_score |  | 0.005 @ 0.344 / -0.026 @ 0.135 | 0.005 @ 0.031 / -0.026 @ 0.135 | 0.010 @ 0.031 / -0.021 @ 0.615 |
+| 4 | 0.900 | key_collision_score |  | 0.000 @ 1.000 / 0.000 @ 1.000 | 0.000 @ 1.000 / 0.000 @ 1.000 | 0.000 @ 1.000 / 0.000 @ 1.000 |
 | 4 | 0.900 | gate_entropy |  | 0.031 @ 0.302 / -0.016 @ 0.104 | 0.016 @ 0.302 / -0.026 @ 0.104 | 0.026 @ 0.302 / -0.005 @ 0.052 |
 | 4 | 0.990 | prediction_error_norm |  | 0.000 @ 0.010 / -0.078 @ 0.500 | 0.000 @ 0.010 / -0.062 @ 0.500 | 0.000 @ 0.010 / -0.073 @ 0.500 |
 | 4 | 0.990 | precision_along_key |  | unavailable | unavailable | 0.083 @ 0.302 / 0.010 @ 0.010 |
 | 4 | 0.990 | evidence_along_key |  | unavailable | 0.073 @ 0.500 / 0.005 @ 0.010 | unavailable |
-| 4 | 0.990 | key_collision_score |  | 0.010 @ 0.333 / -0.016 @ 0.104 | 0.016 @ 0.333 / -0.016 @ 0.104 | 0.005 @ 0.010 / -0.021 @ 0.573 |
+| 4 | 0.990 | key_collision_score |  | 0.000 @ 1.000 / 0.000 @ 1.000 | 0.000 @ 1.000 / 0.000 @ 1.000 | 0.000 @ 1.000 / 0.000 @ 1.000 |
 | 4 | 0.990 | gate_entropy |  | 0.031 @ 0.302 / -0.016 @ 0.104 | 0.016 @ 0.500 / -0.021 @ 0.104 | 0.026 @ 0.302 / 0.000 @ 0.104 |
 | 8 | 0.500 | prediction_error_norm |  | 0.008 @ 0.052 / -0.016 @ 0.201 | 0.013 @ 0.052 / -0.005 @ 0.201 | 0.010 @ 0.500 / -0.005 @ 0.201 |
 | 8 | 0.500 | precision_along_key |  | unavailable | unavailable | 0.159 @ 0.500 / 0.010 @ 0.010 |
 | 8 | 0.500 | evidence_along_key |  | unavailable | 0.117 @ 0.299 / 0.010 @ 0.010 | unavailable |
-| 8 | 0.500 | key_collision_score |  | 0.016 @ 0.471 / -0.013 @ 0.799 | 0.018 @ 0.471 / -0.010 @ 0.799 | 0.026 @ 0.471 / -0.008 @ 0.133 |
-| 8 | 0.500 | gate_entropy |  | 0.005 @ 0.010 / -0.021 @ 0.203 | 0.005 @ 0.500 / -0.021 @ 0.203 | 0.013 @ 0.500 / -0.010 @ 0.102 |
+| 8 | 0.500 | key_collision_score |  | 0.008 @ 0.010 / 0.000 @ 1.000 | 0.008 @ 0.010 / 0.000 @ 1.000 | 0.003 @ 0.010 / 0.000 @ 1.000 |
+| 8 | 0.500 | gate_entropy |  | 0.005 @ 0.010 / -0.021 @ 0.203 | 0.003 @ 0.503 / -0.021 @ 0.203 | 0.010 @ 0.503 / -0.010 @ 0.102 |
 | 8 | 0.900 | prediction_error_norm | * | 0.005 @ 0.010 / -0.047 @ 0.500 | 0.005 @ 0.052 / -0.034 @ 0.500 | 0.003 @ 0.010 / -0.036 @ 0.201 |
 | 8 | 0.900 | precision_along_key | * | unavailable | unavailable | 0.146 @ 0.500 / 0.008 @ 0.010 |
 | 8 | 0.900 | evidence_along_key | * | unavailable | 0.094 @ 0.299 / 0.010 @ 0.010 | unavailable |
-| 8 | 0.900 | key_collision_score | * | 0.023 @ 0.344 / 0.005 @ 0.625 | 0.029 @ 0.156 / 0.008 @ 0.031 | 0.021 @ 0.625 / 0.003 @ 0.031 |
-| 8 | 0.900 | gate_entropy | * | 0.005 @ 0.010 / -0.016 @ 0.102 | 0.005 @ 0.010 / -0.016 @ 0.500 | 0.003 @ 0.010 / -0.018 @ 0.102 |
+| 8 | 0.900 | key_collision_score | * | 0.000 @ 1.000 / 0.000 @ 1.000 | 0.000 @ 1.000 / 0.000 @ 1.000 | 0.000 @ 1.000 / 0.000 @ 1.000 |
+| 8 | 0.900 | gate_entropy | * | 0.005 @ 0.010 / -0.016 @ 0.503 | 0.005 @ 0.010 / -0.018 @ 0.503 | 0.003 @ 0.010 / -0.018 @ 0.102 |
 | 8 | 0.990 | prediction_error_norm |  | -0.003 @ 0.010 / -0.081 @ 0.500 | 0.005 @ 0.010 / -0.049 @ 0.500 | 0.000 @ 0.010 / -0.047 @ 0.201 |
 | 8 | 0.990 | precision_along_key |  | unavailable | unavailable | 0.117 @ 0.500 / 0.008 @ 0.010 |
 | 8 | 0.990 | evidence_along_key |  | unavailable | 0.073 @ 0.500 / 0.010 @ 0.010 | unavailable |
-| 8 | 0.990 | key_collision_score |  | 0.005 @ 0.286 / -0.010 @ 0.552 | 0.005 @ 0.286 / -0.008 @ 0.552 | 0.010 @ 0.286 / -0.010 @ 0.552 |
-| 8 | 0.990 | gate_entropy |  | 0.000 @ 0.010 / -0.018 @ 0.102 | 0.005 @ 0.010 / -0.018 @ 0.500 | 0.008 @ 0.299 / -0.010 @ 0.102 |
+| 8 | 0.990 | key_collision_score |  | 0.000 @ 1.000 / 0.000 @ 1.000 | 0.000 @ 1.000 / 0.000 @ 1.000 | 0.000 @ 1.000 / 0.000 @ 1.000 |
+| 8 | 0.990 | gate_entropy |  | 0.000 @ 0.010 / -0.018 @ 0.102 | 0.005 @ 0.010 / -0.021 @ 0.503 | 0.005 @ 0.302 / -0.010 @ 0.102 |
 | 16 | 0.500 | prediction_error_norm |  | 0.000 @ 0.010 / -0.013 @ 0.500 | 0.000 @ 0.010 / -0.010 @ 0.051 | 0.001 @ 0.500 / -0.007 @ 0.051 |
 | 16 | 0.500 | precision_along_key |  | unavailable | unavailable | 0.167 @ 0.500 / 0.005 @ 0.010 |
 | 16 | 0.500 | evidence_along_key |  | unavailable | 0.085 @ 0.500 / 0.004 @ 0.010 | unavailable |
-| 16 | 0.500 | key_collision_score |  | 0.001 @ 0.512 / -0.005 @ 0.155 | 0.004 @ 0.512 / -0.007 @ 0.155 | 0.007 @ 0.512 / -0.007 @ 0.155 |
+| 16 | 0.500 | key_collision_score |  | 0.000 @ 1.000 / 0.000 @ 1.000 | 0.000 @ 1.000 / 0.000 @ 1.000 | 0.000 @ 1.000 / 0.000 @ 1.000 |
 | 16 | 0.500 | gate_entropy |  | 0.003 @ 0.010 / -0.010 @ 0.102 | 0.003 @ 0.010 / -0.013 @ 0.102 | 0.004 @ 0.010 / -0.010 @ 0.102 |
 | 16 | 0.900 | prediction_error_norm |  | 0.003 @ 0.010 / -0.047 @ 0.500 | 0.001 @ 0.010 / -0.033 @ 0.500 | 0.003 @ 0.201 / -0.016 @ 0.500 |
 | 16 | 0.900 | precision_along_key |  | unavailable | unavailable | 0.128 @ 0.500 / 0.005 @ 0.010 |
 | 16 | 0.900 | evidence_along_key |  | unavailable | 0.059 @ 0.301 / 0.004 @ 0.010 | unavailable |
-| 16 | 0.900 | key_collision_score |  | 0.010 @ 0.370 / -0.013 @ 0.654 | 0.009 @ 0.370 / -0.017 @ 0.654 | 0.010 @ 0.370 / -0.012 @ 0.654 |
+| 16 | 0.900 | key_collision_score |  | 0.000 @ 1.000 / 0.000 @ 1.000 | 0.000 @ 1.000 / 0.000 @ 1.000 | 0.000 @ 1.000 / 0.000 @ 1.000 |
 | 16 | 0.900 | gate_entropy |  | 0.007 @ 0.201 / -0.003 @ 0.102 | 0.007 @ 0.500 / -0.007 @ 0.102 | 0.009 @ 0.500 / 0.001 @ 0.102 |
 | 16 | 0.990 | prediction_error_norm |  | 0.003 @ 0.010 / -0.049 @ 0.500 | 0.000 @ 0.010 / -0.026 @ 0.500 | 0.005 @ 0.201 / -0.005 @ 0.500 |
 | 16 | 0.990 | precision_along_key |  | unavailable | unavailable | 0.115 @ 0.500 / 0.004 @ 0.010 |
 | 16 | 0.990 | evidence_along_key |  | unavailable | 0.070 @ 0.500 / 0.003 @ 0.010 | unavailable |
-| 16 | 0.990 | key_collision_score |  | 0.008 @ 0.299 / -0.013 @ 0.557 | 0.008 @ 0.299 / -0.008 @ 0.557 | 0.020 @ 0.299 / -0.007 @ 0.557 |
-| 16 | 0.990 | gate_entropy |  | 0.007 @ 0.201 / -0.005 @ 0.102 | 0.008 @ 0.301 / -0.007 @ 0.102 | 0.008 @ 0.301 / -0.004 @ 0.102 |
+| 16 | 0.990 | key_collision_score |  | 0.000 @ 1.000 / 0.000 @ 1.000 | 0.000 @ 1.000 / 0.000 @ 1.000 | 0.000 @ 1.000 / 0.000 @ 1.000 |
+| 16 | 0.990 | gate_entropy |  | 0.007 @ 0.201 / -0.005 @ 0.102 | 0.008 @ 0.302 / -0.007 @ 0.102 | 0.008 @ 0.302 / -0.004 @ 0.102 |
 
 Reading (every claim is visible in the tables above):
 
 - **The #28 calibration headline is regime-stable**: the native signals stay well above chance in all nine cells — `precision_along_key` AUROC ranges [0.666, 0.976] and rises with load in every cosine column; `evidence_along_key` stays in [0.688, 0.840] with no monotone trend — while the generic proxies remain flat or anti-correlated everywhere (`prediction_error_norm` peaks at 0.508; `gate_entropy` stays within [0.451, 0.581]; `state_effective_rank` never exceeds 0.437).
-- **The #38 routing consequence is regime-stable**: the native signals are the only ones with no losing operating point anywhere — their worst threshold's gain over matched fixed-ratio routing is >= 0.000 in every cell (best gains reach +0.167 for precision at 16 pairs). `prediction_error_norm` has a negative-worst operating point in 9/9 cells for every variant; `key_collision_score` and `gate_entropy` in 7-9 of 9.
+- **The #38 routing consequence is regime-stable**: the native signals are the only ones that *gain* with no losing operating point anywhere — their worst threshold's gain over matched fixed-ratio routing is >= 0.000 in every cell (best gains reach +0.167 for precision at 16 pairs). `prediction_error_norm` has a negative-worst operating point in 9/9 cells for every variant and `gate_entropy` in 7-9 of 9; `key_collision_score` is degenerate as a router — its score is constant within a collision group, so the threshold grid collapses to route-everything (gain exactly 0.000 in 8 of 9 cells, losing nowhere); only at (8 pairs, cosine 0.500) does a small real range survive (+0.008 at best, 0.000 at worst).
 - **Honest negative — the exact fallback is imperfect at collision cosine 0.990**: exact accuracy there is 0.988-0.992, not 1.000 — the temperature-0.100 softmax readout cannot fully separate near-identical keys — so the fallback is not literally exact at that interference level.
 - **Failure rates grow with load and collision cosine** for all three variants (the 16-pair KDA row is flat between cosines 0.900 and 0.990: 0.780 vs 0.779). Precision-gated KDA has the lowest failure rate in 8 of 9 cells — KDA-RLS-lite edges it at (4 pairs, cosine 0.990), 0.375 vs 0.385 with overlapping CIs — and its margin over fixed-beta KDA narrows at 16 pairs, consistent with the "modest, not transformative" reading above.
 
@@ -498,8 +498,15 @@ tables above.
   points); `state_effective_rank` is strongly anti-correlated — a recency
   artifact (the state fills with time while failures concentrate on early,
   decayed writes), not a usable signal here.
-- **`key_collision_score` is only weakly positive** — directionally useful
-  but far below the native precision/evidence signals it is a proxy for.
+- **`key_collision_score` carries no failure-prediction signal once ties
+  are exact**: every key in a collision group shares the same nominal
+  max-collision score, so the score cannot rank which keys fail — AUROC is
+  exactly 0.500 at the default operating point and stays within
+  [0.488, 0.512] across the regime grid, and as a routing signal its
+  threshold grid collapses to degenerate route-all decisions. (The weakly
+  positive AUROCs reported by earlier revisions of this report were
+  artifacts of build-dependent float tie-breaking among near-tied scores;
+  see the reproducibility note below.)
 - **The baselines do not differentiate on the shared gate path**: GDN-2
   (tied) and EDA (`gamma = 0`) coincide with KDA by construction, so the
   capacity/interference tables contain duplicate rows by design (they
@@ -520,6 +527,15 @@ tables above.
   helps materially, and the RLS-lite lower clamp essentially never binds in
   these regimes; no ablation cell was filtered, so these are visible in
   full.
+- **Reproducibility**: per-item uncertainty scores and recall cosines are
+  rounded to 6 decimal places at collection time
+  (`kda.experiments.calibration.quantize_scores`), so scores that are
+  near-tied by construction (collision scores, histogram gate entropies,
+  low-write-count effective ranks) become *exactly* tied. Without this,
+  rank-based statistics over such scores (AUROC midranks, quantile
+  thresholds) are decided by build-dependent float32 ulp noise (~1e-7) and
+  the affected cells do not reproduce across BLAS/LAPACK builds; with it,
+  regenerating this report reproduces every table cell.
 - **Scope**: synthetic tasks only; gates are sampled, not learned; no
   training runs; sequential reference recurrences only; ECE uses a
   deterministic min-max score-to-probability mapping (no fitted
