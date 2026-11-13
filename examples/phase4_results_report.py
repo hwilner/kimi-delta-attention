@@ -442,12 +442,16 @@ def _robustness_regime_section(
         "peaks at 0.508; `gate_entropy` stays within [0.451, 0.581]; "
         "`state_effective_rank` never exceeds 0.437).",
         "- **The #38 routing consequence is regime-stable**: the native "
-        "signals are the only ones with no losing operating point anywhere "
-        "— their worst threshold's gain over matched fixed-ratio routing is "
-        ">= 0.000 in every cell (best gains reach +0.167 for precision at "
-        "16 pairs). `prediction_error_norm` has a negative-worst operating "
-        "point in 9/9 cells for every variant; `key_collision_score` and "
-        "`gate_entropy` in 7-9 of 9.",
+        "signals are the only ones that *gain* with no losing operating "
+        "point anywhere — their worst threshold's gain over matched "
+        "fixed-ratio routing is >= 0.000 in every cell (best gains reach "
+        "+0.167 for precision at 16 pairs). `prediction_error_norm` has a "
+        "negative-worst operating point in 9/9 cells for every variant and "
+        "`gate_entropy` in 7-9 of 9; `key_collision_score` is degenerate as "
+        "a router — its score is constant within a collision group, so the "
+        "threshold grid collapses to route-everything (gain exactly 0.000 "
+        "in 8 of 9 cells, losing nowhere); only at (8 pairs, cosine 0.500) "
+        "does a small real range survive (+0.008 at best, 0.000 at worst).",
         "- **Honest negative — the exact fallback is imperfect at collision "
         "cosine 0.990**: exact accuracy there is 0.988-0.992, not 1.000 — "
         "the temperature-0.100 softmax readout cannot fully separate "
@@ -575,8 +579,15 @@ tables above.
   points); `state_effective_rank` is strongly anti-correlated — a recency
   artifact (the state fills with time while failures concentrate on early,
   decayed writes), not a usable signal here.
-- **`key_collision_score` is only weakly positive** — directionally useful
-  but far below the native precision/evidence signals it is a proxy for.
+- **`key_collision_score` carries no failure-prediction signal once ties
+  are exact**: every key in a collision group shares the same nominal
+  max-collision score, so the score cannot rank which keys fail — AUROC is
+  exactly 0.500 at the default operating point and stays within
+  [0.488, 0.512] across the regime grid, and as a routing signal its
+  threshold grid collapses to degenerate route-all decisions. (The weakly
+  positive AUROCs reported by earlier revisions of this report were
+  artifacts of build-dependent float tie-breaking among near-tied scores;
+  see the reproducibility note below.)
 - **The baselines do not differentiate on the shared gate path**: GDN-2
   (tied) and EDA (`gamma = 0`) coincide with KDA by construction, so the
   capacity/interference tables contain duplicate rows by design (they
@@ -597,6 +608,15 @@ tables above.
   helps materially, and the RLS-lite lower clamp essentially never binds in
   these regimes; no ablation cell was filtered, so these are visible in
   full.
+- **Reproducibility**: per-item uncertainty scores and recall cosines are
+  rounded to 6 decimal places at collection time
+  (`kda.experiments.calibration.quantize_scores`), so scores that are
+  near-tied by construction (collision scores, histogram gate entropies,
+  low-write-count effective ranks) become *exactly* tied. Without this,
+  rank-based statistics over such scores (AUROC midranks, quantile
+  thresholds) are decided by build-dependent float32 ulp noise (~1e-7) and
+  the affected cells do not reproduce across BLAS/LAPACK builds; with it,
+  regenerating this report reproduces every table cell.
 - **Scope**: synthetic tasks only; gates are sampled, not learned; no
   training runs; sequential reference recurrences only; ECE uses a
   deterministic min-max score-to-probability mapping (no fitted
