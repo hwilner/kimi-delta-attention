@@ -86,6 +86,7 @@ __all__ = [
     "CalibrationConfig",
     "CalibrationSamples",
     "SIGNAL_SPECS",
+    "SCORE_QUANTIZATION_DECIMALS",
     "average_precision",
     "binary_auroc",
     "binned_recall",
@@ -94,10 +95,40 @@ __all__ = [
     "collect_samples_for_batch",
     "collect_variant_samples",
     "expected_calibration_error",
+    "quantize_scores",
     "run_calibration_experiment",
 ]
 
 _EPS = 1e-8
+
+#: Decimal places used by :func:`quantize_scores`.
+SCORE_QUANTIZATION_DECIMALS = 6
+
+
+def quantize_scores(scores: np.ndarray) -> np.ndarray:
+    """Round per-item scores to a fixed decimal grid (reproducibility).
+
+    Several collected scores are *near-tied by construction*: the
+    key-collision score takes one nominal value per collision group (all
+    colliding pairs are built at the same target cosine), the histogram gate
+    entropy takes one value per integer count configuration, and effective
+    ranks of low-write-count states cluster at a few values.  Float32 builds
+    (different BLAS/LAPACK and libm variants) disagree on such scores at the
+    ulp level (~1e-7), and rank-based statistics — AUROC midranks, quantile
+    thresholds — turn that disagreement into visible, environment-dependent
+    changes in report cells.
+
+    Rounding to 6 decimals is orders of magnitude above build noise and far
+    below any meaningful score difference, converts near-ties into *exact*
+    ties, and therefore makes AUROC tie-averaging, quantile thresholds, and
+    every downstream table cell reproducible across environments.  NaN is
+    preserved (unavailable signals stay NaN).
+    """
+
+    return np.round(
+        np.asarray(scores, dtype=np.float64), SCORE_QUANTIZATION_DECIMALS
+    )
+
 
 # Pre-registered uncertainty signals (issue #28). ``sign`` converts the raw
 # signal into an uncertainty score: ``score = sign * raw``, so a *larger* score
@@ -656,7 +687,12 @@ def collect_samples_for_batch(
         # own readout o = S^T q applied to stored tensors, not a rerun).
         recall = torch.einsum("bhv,blh->blv", result.final_state, keys)
         cosine = F.cosine_similarity(recall, values, dim=-1, eps=_EPS)  # (B, L)
-        labels = (cosine < config.failure_threshold).to(torch.float64).numpy()
+        # Quantize before thresholding so the failure label is decided on an
+        # exact decimal grid rather than build-dependent float32 ulps (no
+        # observed item lands within 1e-4 of the threshold; see
+        # quantize_scores).
+        cosine_scores = quantize_scores(cosine.numpy())  # (B, L) float64
+        labels = (cosine_scores < config.failure_threshold).astype(np.float64)
 
         write_vectors = _write_vectors(result.trace, keys)
         states = replay_state_trajectory(
@@ -692,10 +728,14 @@ def collect_samples_for_batch(
     }
     # Uniform sign convention: score = sign * raw, so a larger score always
     # means more predicted uncertainty (NaN signals stay NaN = unavailable).
+    # Scores are quantized so near-tied signals (see quantize_scores) become
+    # exactly tied and rank statistics are reproducible across float32 builds.
     signals = {}
     for name in config.signals:
         sign = float(SIGNAL_SPECS[name]["sign"])
-        signals[name] = sign * np.asarray(raw_signals[name], dtype=np.float64)
+        signals[name] = quantize_scores(
+            sign * np.asarray(raw_signals[name], dtype=np.float64)
+        )
 
     groups = (np.arange(batch) + group_offset).repeat(seq_len)
     return CalibrationSamples(
@@ -703,7 +743,7 @@ def collect_samples_for_batch(
         labels=labels.reshape(-1),
         groups=groups,
         signals={name: value.reshape(-1) for name, value in signals.items()},
-        recall_cosines=cosine.numpy().reshape(-1),
+        recall_cosines=cosine_scores.reshape(-1),
     )
 
 
