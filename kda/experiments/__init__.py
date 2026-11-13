@@ -4,6 +4,7 @@ from .calibration import (
     CalibrationConfig,
     CalibrationSamples,
     SIGNAL_SPECS,
+    SCORE_QUANTIZATION_DECIMALS,
     average_precision,
     binary_auroc,
     binned_recall,
@@ -12,6 +13,7 @@ from .calibration import (
     collect_samples_for_batch,
     collect_variant_samples,
     expected_calibration_error,
+    quantize_scores,
     run_calibration_experiment,
 )
 from .calibration_robustness import (
@@ -72,6 +74,7 @@ __all__ = [
     "CalibrationConfig",
     "CalibrationSamples",
     "SIGNAL_SPECS",
+    "SCORE_QUANTIZATION_DECIMALS",
     "average_precision",
     "binary_auroc",
     "binned_recall",
@@ -80,6 +83,7 @@ __all__ = [
     "collect_samples_for_batch",
     "collect_variant_samples",
     "expected_calibration_error",
+    "quantize_scores",
     "run_calibration_experiment",
     "CalibrationRobustnessConfig",
     "regime_cells",
