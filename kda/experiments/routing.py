@@ -40,6 +40,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+from kda.experiments.calibration import quantize_scores
 from kda.routing import (
     ROUTING_SIGNALS,
     RoutingPolicy,
@@ -237,11 +238,18 @@ def collect_routing_data(
             )
             compressed_cos = F.cosine_similarity(compressed, task.values, dim=-1, eps=_EPS)
             exact_cos = F.cosine_similarity(exact, task.values, dim=-1, eps=_EPS)
-        compressed_parts.append((compressed_cos >= config.failure_threshold).numpy())
-        exact_parts.append((exact_cos >= config.failure_threshold).numpy())
+        # Quantize before thresholding/ranking so near-tied scores become
+        # exactly tied and threshold quantiles, fallback rates, and ok-masks
+        # are reproducible across float32 builds (see quantize_scores).
+        compressed_parts.append(
+            quantize_scores(compressed_cos.numpy()) >= config.failure_threshold
+        )
+        exact_parts.append(
+            quantize_scores(exact_cos.numpy()) >= config.failure_threshold
+        )
         for name in config.signals:
             sign = float(ROUTING_SIGNALS[name]["sign"])
-            score_parts[name].append((sign * raw[name]).numpy())
+            score_parts[name].append(quantize_scores((sign * raw[name]).numpy()))
 
     return RoutingVariantData(
         variant=variant_name,
