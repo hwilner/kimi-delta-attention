@@ -11,6 +11,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 EXAMPLES_DIR = REPO_ROOT / "examples"
 README = EXAMPLES_DIR / "README.md"
+PROJECT_BOARD = REPO_ROOT / "docs" / "PROJECT.md"
+PHASE4_REPORT = REPO_ROOT / "docs" / "PHASE4_RESULTS.md"
 
 BACKTICKED_PY = re.compile(r"`([A-Za-z0-9_]+\.py)`")
 
@@ -71,3 +73,22 @@ def test_conventions_are_documented():
         "GDN-2 and EDA",
     ):
         assert needle in text, f"examples/README.md dropped the {needle!r} note"
+
+
+def test_project_board_links_index_and_report():
+    """docs/PROJECT.md must point at the examples index and the report.
+
+    The Phase 4 epic table is the entry point most contributors read first;
+    if the links drift (renamed files, moved docs) newcomers land on 404s.
+    """
+    text = PROJECT_BOARD.read_text(encoding="utf-8")
+    assert "](../examples/README.md)" in text, (
+        "docs/PROJECT.md no longer links the examples index"
+    )
+    assert "](PHASE4_RESULTS.md)" in text, (
+        "docs/PROJECT.md no longer links the Phase 4 report"
+    )
+    assert PHASE4_REPORT.is_file(), "docs/PHASE4_RESULTS.md is missing"
+    assert "`examples/phase4_results_report.py`" in text, (
+        "docs/PROJECT.md no longer names the report generator script"
+    )
