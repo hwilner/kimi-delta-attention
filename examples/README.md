@@ -40,6 +40,7 @@ Suggested reading order: diagnostics (#27) → calibration (#28) → routing
 | Example | What it shows |
 |---|---|
 | `basic_usage.py` | Minimal `KimiDeltaAttention` layer usage on synthetic tensors. |
+| `memory_walkthrough.py` | #17 — KDA vs naive full attention, decoded step by step: fixed recurrent state vs growing KV cache, with illustrative per-step timings (not a benchmark). Heavily commented companion to `docs/EXTENDED_INTRODUCTION.md`. |
 
 ## Conventions
 

@@ -54,8 +54,9 @@ def test_phase4_table_structure():
         for line in text.splitlines()
         if line.startswith("| `") and line.endswith("|")
     ]
-    # Ten Phase 4 tooling rows + one basic-usage row in the "Other" table.
-    assert len(rows) == len(_example_scripts()) == 11
+    # Ten Phase 4 tooling rows + two "Other" rows (basic usage, #17
+    # memory walkthrough).
+    assert len(rows) == len(_example_scripts()) == 12
     other_section = text.split("## Other", 1)[1]
     for row in rows:
         cells = [c.strip() for c in row.strip("|").split("|")]
