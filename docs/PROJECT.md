@@ -8,13 +8,12 @@ up a card in `CONTRIBUTING.md`.
 ## Community implementation and extension welcome
 
 Everyone is welcome to help extend this educational implementation of the
-original Kimi Linear work and its reference ecosystem. The cards below cover
-implementation, tests, baselines, experiments, examples, API documentation, and
-packaging; each is a valid contribution path. If a useful extension is not
-represented by a card, open a discussion-style issue to propose it before
-starting a large change. Contributors should retain the repository's
-educational scope and follow the testing and evidence rules in
-`CONTRIBUTING.md`.
+original Kimi Linear work. The cards below cover implementation, tests,
+baselines, experiments, examples, API documentation, and packaging; each is a
+valid contribution path. If a useful extension is not represented by a card,
+open a discussion-style issue to propose it before starting a large change.
+Contributors should retain the repository's educational scope and follow the
+testing and evidence rules in `CONTRIBUTING.md`.
 
 ## Status: Ready to start
 
