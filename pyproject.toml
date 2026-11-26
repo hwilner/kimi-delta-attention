@@ -1,0 +1,60 @@
+# PEP 621 packaging metadata and centralized tool configuration (issue #16).
+#
+# This file lives alongside the existing setup.py. The [project] table below
+# mirrors setup.py field-for-field (guarded by tests/test_pyproject_packaging.py):
+# pyproject.toml is the authoritative metadata source for modern tooling
+# (pip >= 21.3 / setuptools >= 61), while setup.py remains as the legacy
+# fallback for older toolchains. `pip install -e .` and `pytest tests/`
+# keep working exactly as documented in README.md and CONTRIBUTING.md.
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kimi-delta-attention"
+version = "0.1.0"
+description = "Educational implementation of Kimi Delta Attention"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    { name = "hwilner" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "torch>=2.0.0",
+    "numpy>=1.24.0",
+    "einops>=0.7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/hwilner/kimi-delta-attention"
+
+# Mirror setup.py's find_packages(): ship the kda package and its
+# subpackages only (tests/, examples/, docs/ are never installed).
+[tool.setuptools.packages.find]
+include = ["kda*"]
+
+# Centralized pytest configuration (previously there was no pytest.ini,
+# setup.cfg, or tox.ini -- config existed only as documented command lines).
+# `pytest` with no arguments now collects exactly the tests/ tree, matching
+# the documented `pytest tests/` invocation. Explicit path arguments still
+# override testpaths, so `pytest tests/test_kda_core.py -v` works unchanged.
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers"
